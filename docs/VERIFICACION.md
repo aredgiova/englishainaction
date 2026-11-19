@@ -131,7 +131,7 @@ Comandos en [guía alojada](supabase-hosted.md) y [guía local](local-verificati
 | --- | --- |
 | Alta · piloto | SMTP autorizado, dos plantillas y recepción/consumo real de invitación y recuperación; generar un token no basta |
 | Alta · local | Docker, Supabase desechable, migraciones, semilla dos veces y comparación; `verify:local` y `test:e2e:journey` |
-| Alta · despliegue | Dominio HTTPS final, origen/retornos actualizados, recompilación y aceptación; 3002 es desarrollo local con datos alojados |
+| Cerrada · acceso desplegado | Dominio HTTPS final y retornos actualizados; ingreso, sesión, panel y salida de los tres roles verificados en Vercel después del redespliegue. Avance del alumno conservado |
 | Media · operación | Restauración de respaldo en entorno distinto; procedimiento de cambio de correo, que no sincroniza automáticamente el perfil |
 | Media · academia | Validación pedagógica y cuentas operativas controladas antes de matricular personas reales |
 | Publicación | Autorizada posteriormente para `aredgiova/englishainaction`; preparación para Vercel registrada abajo |
@@ -148,6 +148,20 @@ Validación final en la copia limpia `qa-vercel-20261119`, sin variables privada
 
 ## Ajuste de Auth después del despliegue
 
-El propietario desplegó la aplicación en `https://englishainaction.vercel.app`. El ingreso devolvió HTTP 503 con `setup_required` y mensaje `Falta configurar APP_URL.`; las tres cuentas ficticias se verificaron directamente con Supabase y sus sesiones de comprobación se cerraron. El acceso a través de Vercel sigue pendiente de configurar esa variable y redesplegar.
+El propietario desplegó la aplicación en `https://englishainaction.vercel.app`. Inicialmente, el ingreso devolvió HTTP 503 con `setup_required` y mensaje `Falta configurar APP_URL.`; las tres cuentas ficticias se verificaron directamente con Supabase y sus sesiones de comprobación se cerraron. Después, el propietario configuró esa variable y redesplegó; la comprobación posterior confirma el acceso a través de Vercel.
 
 Con autorización para completar la configuración, se aplicó Site URL `https://englishainaction.vercel.app` y se añadieron sus retornos exactos `/auth/confirm` y `/definir-clave`. Se conservaron seis redirecciones preexistentes. `config push` y el diff posterior terminaron con salida 0; `update=0`, `local_only=0`, ocho propiedades remotas no declaradas intactas. Perfil y guías quedan alineados. No se modificaron usuarios, contraseñas, claves, migraciones ni SMTP.
+
+Verificación posterior al redespliegue, **2026-11-19T21:27:34Z**, sobre el dominio público de Vercel:
+
+| Comprobación | Resultado |
+| --- | --- |
+| Ingreso de administrador, maestro y alumno | HTTP 200; rol esperado en las tres respuestas |
+| Sesión mediante cookies y `/api/v1/me` | HTTP 200; rol conservado en las tres cuentas |
+| Paneles `/administracion`, `/docente`, `/campus` | HTTP 200; sin aviso de configuración faltante |
+| Cursos y temario del alumno | HTTP 200; curso de aceptación existente, avance 1/2 y siguiente lección conservados |
+| Cierre de las tres sesiones de prueba | HTTP 200; `/api/v1/me` devuelve HTTP 401 después de salir |
+
+La comprobación no creó usuarios, cursos ni intentos, y no cambió contraseñas. SMTP, invitaciones y recuperación por correo mantienen el pendiente documentado; este resultado acredita el ingreso con las cuentas existentes.
+
+La verificación adicional en navegador aislado terminó con salida 0: los tres roles llegaron automáticamente a su panel, conservaron la sesión al recargar y cerraron sesión correctamente; al volver al panel se exigió ingresar. El alumno mostró **50 % (1 de 2 lecciones)** en escritorio y en móvil de 390 × 844, sin desbordamiento horizontal. Los contextos de prueba se cerraron. Reporte saneado y cuatro capturas locales en `.cache/production-ui-20261119/`, excluidos de Git.
