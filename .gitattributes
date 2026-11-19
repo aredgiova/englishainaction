@@ -1,0 +1,4 @@
+# Preserve the exact bytes of applied migrations and archived verification reports.
+supabase/migrations/*.sql -text
+docs/verificacion-inicial-2026-11-19.md -text
+docs/verificacion-qa-2026-11-19.md -text

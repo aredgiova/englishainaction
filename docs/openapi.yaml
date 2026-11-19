@@ -1,0 +1,955 @@
+openapi: 3.1.0
+info:
+  title: English in Action — API de academia
+  version: 1.0.0
+  description: |
+    FASE_ACTIVA=1. Contrato de identidad, autoría, matrícula y práctica.
+    La interfaz está en español y el contenido didáctico en inglés.
+    Auth de Supabase proporciona la sesión SSR. El rol se consulta en perfiles
+    administrados por servidor; nunca se acepta del cliente ni de user_metadata.
+    Las respuestas personales usan Cache-Control: private, no-store.
+    Los cuerpos JSON admiten hasta 512 KiB. Las escrituras exigen Origin igual al origen de APP_URL, incluso acceso y
+    recuperación. Las rutas con sesión verifican el usuario en Supabase Auth.
+    Una sesión ausente o caducada produce 401; un rol incorrecto, 403;
+    un recurso inexistente, ajeno o sin matrícula, 404.
+    Los éxitos usan {data}; los fallos, {error:{code,message,fieldErrors?}}.
+    Los errores de validación usan 422 y rutas de campo con puntos.
+    Las cookies se generan y renuevan mediante @supabase/ssr; su nombre real
+    depende del proyecto y puede incluir varios fragmentos.
+servers:
+  - url: http://127.0.0.1:3000
+    description: Aplicación local; cambiar APP_URL y las redirecciones de Auth para el piloto.
+tags:
+  - name: Identidad
+  - name: Autoría
+  - name: Matrículas
+  - name: Práctica
+security:
+  - sessionCookie: []
+paths:
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      tags: [Identidad]
+      summary: Iniciar sesión con correo y contraseña
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInput' }
+            example: {email: student@englishinaction.test, password: EnglishDemo2026!}
+      responses:
+        '200':
+          description: Usuario verificado y cookies SSR emitidas.
+          headers:
+            Set-Cookie: {description: Cookies de acceso y renovación administradas por Supabase SSR., schema: {type: string}}
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [Identidad]
+      summary: Cerrar la sesión actual y eliminar sus cookies
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '200':
+          description: Sesión cerrada.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties:
+                  data:
+                    type: object
+                    required: [signedOut]
+                    additionalProperties: false
+                    properties: {signedOut: {const: true}}
+              example: {data: {signedOut: true}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '502':
+          description: Auth no pudo cerrar la sesión.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+              example: {error: {code: logout_failed, message: No se pudo cerrar la sesión.}}
+  /api/v1/auth/recover:
+    post:
+      operationId: recoverPassword
+      tags: [Identidad]
+      summary: Solicitar correo de recuperación
+      description: Devuelve el mismo mensaje para una solicitud aceptada exista o no la cuenta. El correo abre /auth/confirm. Un fallo operativo de Auth o del envío devuelve 502 con un mensaje genérico.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              additionalProperties: false
+              properties: {email: {type: string, format: email, maxLength: 254}}
+            example: {email: student@englishinaction.test}
+      responses:
+        '200':
+          description: Solicitud recibida sin revelar si existe la cuenta.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties:
+                  data:
+                    type: object
+                    required: [message]
+                    additionalProperties: false
+                    properties: {message: {type: string}}
+              example: {data: {message: 'Si la cuenta existe, recibirás un correo.'}}
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '500': { $ref: '#/components/responses/ServerError' }
+        '502':
+          description: El proveedor no pudo procesar la recuperación; el mensaje no revela si existe la cuenta.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+              example: {error: {code: recovery_unavailable, message: No se pudo procesar la recuperación. Espera unos minutos e inténtalo de nuevo.}}
+  /api/v1/auth/password:
+    post:
+      operationId: setPassword
+      tags: [Identidad]
+      summary: Definir contraseña con la sesión verificada del enlace
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              additionalProperties: false
+              properties: {password: {type: string, minLength: 12, maxLength: 128, writeOnly: true}}
+      responses:
+        '200':
+          description: Contraseña actualizada.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties:
+                  data:
+                    type: object
+                    required: [updated]
+                    additionalProperties: false
+                    properties: {updated: {const: true}}
+              example: {data: {updated: true}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /auth/confirm:
+    get:
+      operationId: confirmEmailLink
+      tags: [Identidad]
+      summary: Verificar enlace de invitación o recuperación fuera de la API REST
+      description: |
+        Verifica token_hash con Supabase Auth, establece cookies SSR y redirige
+        exclusivamente a /definir-clave. Un enlace inválido, incompleto, usado
+        o caducado redirige a /ingresar?error=invalid_link. No acepta destinos arbitrarios.
+      security: []
+      parameters:
+        - name: token_hash
+          in: query
+          required: true
+          schema: {type: string, minLength: 1}
+        - name: type
+          in: query
+          required: true
+          schema: {type: string, enum: [invite, recovery]}
+      responses:
+        '303':
+          description: Redirección fija tras la verificación del enlace.
+          headers:
+            Location:
+              description: URL absoluta del origen APP_URL con ruta /definir-clave o /ingresar?error=invalid_link.
+              schema: {type: string, format: uri}
+              example: http://localhost:3000/definir-clave
+            Set-Cookie: {description: Se emiten cookies SSR únicamente si el token es válido., schema: {type: string}}
+  /api/v1/me:
+    get:
+      operationId: getMe
+      tags: [Identidad]
+      summary: Obtener el perfil y rol administrado del usuario actual
+      x-roles: [admin, teacher, student]
+      responses:
+        '200':
+          description: Perfil verificado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResponse' }
+              example: {data: {id: '00000000-0000-4000-8000-000000000003', name: Lina Torres, email: student@englishinaction.test, role: student}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/admin/invitations:
+    post:
+      operationId: inviteUser
+      tags: [Identidad]
+      summary: Invitar a un estudiante o docente por correo
+      description: |
+        Solo administración. El servidor reserva de forma única el correo normalizado
+        antes de usar la clave privilegiada de Auth. No admite rol admin.
+        Una invitación ya en curso o una cuenta existente produce 409.
+        El enlace local se consulta en el buzón de pruebas y abre /auth/confirm.
+      x-roles: [admin]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InvitationInput' }
+            example: {email: invited@englishinaction.test, name: Alex Rivera, role: student}
+      responses:
+        '201':
+          description: Invitación registrada y correo enviado.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties: {data: {$ref: '#/components/schemas/Invitation'}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '500': { $ref: '#/components/responses/ServerError' }
+        '502':
+          description: Auth no pudo entregar o tramitar la invitación; la reserva se registra como fallida.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+              example: {error: {code: invitation_failed, message: No se pudo enviar la invitación. Revisa el correo y la configuración de Auth.}}
+  /api/v1/courses:
+    get:
+      operationId: listCourses
+      tags: [Autoría]
+      summary: Listar cursos según el rol
+      description: |
+        El estudiante obtiene sus cursos matriculados y el progreso vigente;
+        el docente, los cursos de su propiedad con revisión y estado editorial;
+        administración, el catálogo interno. progress solo se incluye para estudiantes.
+      x-roles: [admin, teacher, student]
+      responses:
+        '200':
+          description: Catálogo autorizado, posiblemente vacío.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties: {data: {type: array, items: {$ref: '#/components/schemas/CourseSummary'}}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createCourse
+      tags: [Autoría]
+      summary: Crear curso y borrador inicial propios
+      x-roles: [teacher]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateCourseInput'}
+            example: {title: First Conversations, level: A1, audience: university}
+      responses:
+        '201':
+          description: Curso creado y revisión inicial de borrador.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties:
+                  data:
+                    type: object
+                    required: [courseId, revision]
+                    additionalProperties: false
+                    properties: {courseId: {$ref: '#/components/schemas/Uuid'}, revision: {$ref: '#/components/schemas/Revision'}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /api/v1/courses/{courseId}/draft:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    get:
+      operationId: getDraft
+      tags: [Autoría]
+      summary: Leer el árbol completo del borrador propio
+      description: Las soluciones y el feedback docente solo se entregan al autor.
+      x-roles: [teacher]
+      responses:
+        '200':
+          description: Borrador con su revisión actual.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties: {data: {$ref: '#/components/schemas/Draft'}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+    put:
+      operationId: saveDraft
+      tags: [Autoría]
+      summary: Guardar el árbol de borrador con control optimista
+      description: |
+        Permite campos pedagógicos vacíos y arreglos vacíos. Exige estructura válida,
+        tipos conocidos e identificadores estables sin duplicados. Reemplaza el
+        árbol completo e incrementa revision. No modifica la publicación vigente.
+        expectedRevision debe coincidir con la revisión actual; si no, 409.
+      x-roles: [teacher]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SaveDraftInput'}
+            example: {expectedRevision: 1, document: {title: First Conversations, level: A1, audience: university, units: []}}
+      responses:
+        '200':
+          description: Nueva revisión guardada.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties:
+                  data:
+                    type: object
+                    required: [revision]
+                    additionalProperties: false
+                    properties: {revision: {$ref: '#/components/schemas/Revision'}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /api/v1/courses/{courseId}/releases:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    post:
+      operationId: publishCourse
+      tags: [Autoría]
+      summary: Publicar atómicamente una revisión completa e inmutable
+      description: |
+        Exige todas las reglas de PublishedDocument. Registra autor y revisión.
+        Una restricción única por curso y revisión conserva releaseId al repetir
+        exactamente la publicación (200). Una publicación nueva responde 201.
+        Las lecciones con igual identificador, contenido y evaluación conservan
+        lessonVersionId, incluso al cambiar de orden; un cambio crea otra versión.
+        Las matrículas usan la publicación vigente y los intentos previos permanecen.
+      x-roles: [teacher]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReleaseInput'}
+            example: {expectedRevision: 2}
+      responses:
+        '201': {$ref: '#/components/responses/Release'}
+        '200': {$ref: '#/components/responses/Release'}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /api/v1/courses/{courseId}/enrollments:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    post:
+      operationId: enrollStudent
+      tags: [Matrículas]
+      summary: Matricular una cuenta estudiantil activa en un curso publicado
+      description: |
+        Solo administración. La unicidad estudiante/curso evita matrículas duplicadas.
+        La primera matrícula recibe 201; repetirla recupera el mismo enrollmentId
+        con 200. La cuenta debe tener perfil activo, rol student y correo confirmado
+        en Supabase Auth. Una invitación aún sin aceptar no permite matrícula.
+      x-roles: [admin]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentEmail]
+              additionalProperties: false
+              properties: {studentEmail: {type: string, format: email, maxLength: 254}}
+            example: {studentEmail: student@englishinaction.test}
+      responses:
+        '201': {$ref: '#/components/responses/Enrollment'}
+        '200': {$ref: '#/components/responses/Enrollment'}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /api/v1/courses/{courseId}/outline:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+    get:
+      operationId: getOutline
+      tags: [Práctica]
+      summary: Leer índice vigente y avance propio
+      description: |
+        Solo estudiante matriculado. Conserva el orden docente. completed cuenta
+        versiones de lección vigentes completadas una sola vez, incluso con errores.
+        nextLessonId es la primera pendiente o null. Un curso ajeno devuelve 404.
+      x-roles: [student]
+      responses:
+        '200':
+          description: Índice vigente autorizado.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties: {data: {$ref: '#/components/schemas/Outline'}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /api/v1/courses/{courseId}/lessons/{lessonId}:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+      - $ref: '#/components/parameters/LessonId'
+    get:
+      operationId: getLesson
+      tags: [Práctica]
+      summary: Leer una lección vigente sin soluciones
+      description: |
+        Solo estudiante matriculado. El servidor y las políticas de base de datos
+        protegen correctOptionId y feedback; ninguno aparece en esta respuesta.
+      x-roles: [student]
+      responses:
+        '200':
+          description: Contenido y práctica de la versión publicada vigente.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                additionalProperties: false
+                properties: {data: {$ref: '#/components/schemas/Lesson'}}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+  /api/v1/courses/{courseId}/lessons/{lessonId}/attempts:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+      - $ref: '#/components/parameters/LessonId'
+    post:
+      operationId: submitAttempt
+      tags: [Práctica]
+      summary: Corregir y guardar un intento de forma idempotente
+      description: |
+        Solo estudiante matriculado. Idempotency-Key se asocia al actor, operación
+        (incluye curso y lección) y cuerpo normalizado JSON. Una clave nueva crea
+        un intento (201); la misma clave y cuerpo devuelve el resultado original
+        (200), antes de comprobar si la lección cambió posteriormente. La misma
+        clave y otro cuerpo produce 409 idempotency_conflict. Un nuevo intento
+        sobre una versión desplazada produce 409 lesson_changed. Una práctica
+        deliberadamente nueva requiere una clave nueva. Debe responderse exactamente
+        una vez cada actividad obligatoria; se permiten actividades opcionales
+        respondidas, pero no actividades ni opciones desconocidas. El score cuenta
+        las respuestas entregadas; completar la lección no exige acertarlas.
+        Corrección, intento, avance e idempotencia se resuelven en una transacción.
+        El feedback solo se devuelve después de esta entrega válida.
+      x-roles: [student]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AttemptInput'}
+            example:
+              lessonVersionId: 00000000-0000-4000-8000-000000000010
+              answers: [{activityId: origin, optionId: yopal}]
+      responses:
+        '201': {$ref: '#/components/responses/Attempt'}
+        '200': {$ref: '#/components/responses/Attempt'}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sb-project-ref-auth-token
+      description: Nombre ilustrativo; Supabase SSR usa sb-<project-ref>-auth-token y fragmentos .0/.1 si hacen falta. Se obtiene por login o /auth/confirm; nunca enviar la clave service_role al cliente.
+  parameters:
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      description: Debe coincidir exactamente con el origen configurado en APP_URL. Si falta o es ajeno se devuelve 403 invalid_origin.
+      schema: {type: string, format: uri}
+      example: http://localhost:3000
+    CourseId:
+      name: courseId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/Uuid'}
+    LessonId:
+      name: lessonId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/StableId'}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Clave de reintento generada por cliente y conservada hasta recibir respuesta. Se recomienda UUID. Una nueva práctica usa una clave nueva.
+      schema: {type: string, minLength: 8, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$'}
+      example: 4b09e25f-846a-4452-872c-5a680976a21c
+  responses:
+    Unauthorized:
+      description: Sin sesión válida, sesión expirada o credenciales incorrectas.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {error: {code: unauthenticated, message: Inicia sesión para continuar.}}
+    Forbidden:
+      description: Rol sin permiso, perfil deshabilitado u Origin ausente/ajeno.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          examples:
+            role: {value: {error: {code: forbidden, message: Tu rol no permite esta operación.}}}
+            origin: {value: {error: {code: invalid_origin, message: El origen de la solicitud no está permitido.}}}
+    NotFound:
+      description: Recurso inexistente, ajeno, no publicado o sin matrícula; no revela la existencia de recursos ajenos.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {error: {code: not_found, message: No se encontró el recurso.}}
+    Conflict:
+      description: Revisión desplazada, versión de lección desplazada, invitación duplicada o clave de reintento reutilizada con otro cuerpo.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          examples:
+            revision: {value: {error: {code: revision_conflict, message: El borrador cambió. Recarga la revisión actual.}}}
+            lesson: {value: {error: {code: lesson_changed, message: La lección cambió. Abre su versión vigente.}}}
+            idempotency: {value: {error: {code: idempotency_conflict, message: Esta clave ya se utilizó con otras respuestas.}}}
+    Invalid:
+      description: JSON, parámetros o tipos inválidos, árbol duplicado, publicación incompleta o respuestas incompletas/desconocidas. fieldErrors es opcional y agrupa mensajes por ruta de campo con puntos.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example:
+            error:
+              code: validation_error
+              message: Revisa los datos enviados.
+              fieldErrors:
+                document.units.0.lessons.0.objective: [Completa este campo antes de publicar.]
+    ServerError:
+      description: Error interno o indisponibilidad de Auth; sin detalles sensibles.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Release:
+      description: Identificador inmutable de publicación; 201 nueva, 200 repetición de la misma revisión.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            additionalProperties: false
+            properties:
+              data:
+                type: object
+                required: [releaseId]
+                additionalProperties: false
+                properties: {releaseId: {$ref: '#/components/schemas/Uuid'}}
+          example: {data: {releaseId: 00000000-0000-4000-8000-000000000020}}
+    Enrollment:
+      description: Matrícula única; 201 nueva, 200 si ya existía.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            additionalProperties: false
+            properties:
+              data:
+                type: object
+                required: [enrollmentId, courseId, studentId]
+                additionalProperties: false
+                properties:
+                  enrollmentId: {$ref: '#/components/schemas/Uuid'}
+                  courseId: {$ref: '#/components/schemas/Uuid'}
+                  studentId: {$ref: '#/components/schemas/Uuid'}
+    Attempt:
+      description: Corrección y progreso persistidos; 201 nuevo intento, 200 reenvío idéntico del resultado original.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            additionalProperties: false
+            properties: {data: {$ref: '#/components/schemas/AttemptResult'}}
+          example:
+            data:
+              attemptId: 00000000-0000-4000-8000-000000000030
+              score: {correct: 1, total: 1}
+              items: [{activityId: origin, correct: true, feedback: Lina says she is from Yopal.}]
+              courseProgress: {completed: 1, total: 2, nextLessonId: classmate}
+  schemas:
+    Uuid: {type: string, format: uuid}
+    StableId: {type: string, minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9][A-Za-z0-9_-]*$'}
+    Revision: {type: integer, minimum: 0, maximum: 2147483647}
+    Level: {type: string, enum: [A1, A2, B1, B2, C1, C2], description: Nivel del Marco Común Europeo de Referencia.}
+    Audience: {type: string, enum: [school, university, professional]}
+    Role: {type: string, enum: [admin, teacher, student]}
+    ErrorResponse:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code: {type: string, description: Código estable legible por máquina.}
+            message: {type: string, description: Mensaje seguro para mostrar en español.}
+            fieldErrors: {type: object, additionalProperties: {type: array, items: {type: string}}}
+    LoginInput:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        password: {type: string, minLength: 1, maxLength: 128, writeOnly: true}
+    Profile:
+      type: object
+      required: [id, name, email, role]
+      additionalProperties: false
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        email: {type: string, format: email}
+        role: {$ref: '#/components/schemas/Role'}
+    ProfileResponse:
+      type: object
+      required: [data]
+      additionalProperties: false
+      properties: {data: {$ref: '#/components/schemas/Profile'}}
+    InvitationInput:
+      type: object
+      required: [email, name, role]
+      additionalProperties: false
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        name: {type: string, minLength: 1, maxLength: 120}
+        role: {type: string, enum: [student, teacher]}
+    Invitation:
+      type: object
+      required: [invitationId, email, role, status]
+      additionalProperties: false
+      properties:
+        invitationId: {$ref: '#/components/schemas/Uuid'}
+        email: {type: string, format: email}
+        role: {type: string, enum: [student, teacher]}
+        status: {const: sent}
+    CreateCourseInput:
+      type: object
+      required: [title, level, audience]
+      additionalProperties: false
+      properties:
+        title: {type: string, minLength: 1, maxLength: 200, pattern: '\S'}
+        level: {$ref: '#/components/schemas/Level'}
+        audience: {$ref: '#/components/schemas/Audience'}
+    CourseProgress:
+      type: object
+      required: [completed, total, nextLessonId]
+      additionalProperties: false
+      properties:
+        completed: {type: integer, minimum: 0, description: Versiones vigentes completadas al menos una vez.}
+        total: {type: integer, minimum: 0, description: Lecciones publicadas vigentes.}
+        nextLessonId: {oneOf: [{$ref: '#/components/schemas/StableId'}, {type: 'null'}]}
+    CourseSummary:
+      type: object
+      required: [courseId, title, level, audience, ownerId, published, revision, releaseId]
+      additionalProperties: false
+      properties:
+        courseId: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        level: {$ref: '#/components/schemas/Level'}
+        audience: {$ref: '#/components/schemas/Audience'}
+        ownerId: {$ref: '#/components/schemas/Uuid'}
+        published: {type: boolean}
+        revision: {$ref: '#/components/schemas/Revision'}
+        releaseId: {oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]}
+        progress: {$ref: '#/components/schemas/CourseProgress', description: Solo se incluye para el estudiante matriculado.}
+    TextBlock:
+      type: object
+      required: [id, type, text]
+      additionalProperties: false
+      properties:
+        id: {$ref: '#/components/schemas/StableId'}
+        type: {const: text}
+        text: {type: string, maxLength: 20000}
+    ChoiceOption:
+      type: object
+      required: [id, text]
+      additionalProperties: false
+      properties:
+        id: {$ref: '#/components/schemas/StableId'}
+        text: {type: string, maxLength: 2000}
+    StudentChoiceActivity:
+      type: object
+      required: [id, type, prompt, required, options]
+      additionalProperties: false
+      properties:
+        id: {$ref: '#/components/schemas/StableId'}
+        type: {const: choice}
+        prompt: {type: string, maxLength: 4000}
+        required: {type: boolean}
+        options: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/ChoiceOption'}}
+    ChoiceActivity:
+      type: object
+      required: [id, type, prompt, required, options, correctOptionId, feedback]
+      additionalProperties: false
+      properties:
+        id: {$ref: '#/components/schemas/StableId'}
+        type: {const: choice}
+        prompt: {type: string, maxLength: 4000}
+        required: {type: boolean}
+        options: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/ChoiceOption'}}
+        correctOptionId: {type: string, maxLength: 80, description: Privado. En publicación debe identificar una opción existente.}
+        feedback:
+          type: object
+          required: [correct, incorrect]
+          additionalProperties: false
+          properties:
+            correct: {type: string, maxLength: 2000}
+            incorrect: {type: string, maxLength: 2000}
+    DocumentLesson:
+      type: object
+      required: [id, title, objective, blocks, activities]
+      additionalProperties: false
+      properties:
+        id: {$ref: '#/components/schemas/StableId'}
+        title: {type: string, maxLength: 200}
+        objective: {type: string, maxLength: 4000}
+        blocks: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/TextBlock'}}
+        activities: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/ChoiceActivity'}}
+    DocumentUnit:
+      type: object
+      required: [id, title, lessons]
+      additionalProperties: false
+      properties:
+        id: {$ref: '#/components/schemas/StableId'}
+        title: {type: string, maxLength: 200}
+        lessons: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/DocumentLesson'}}
+    DraftDocument:
+      type: object
+      description: |
+        Árbol ordenado. Se permiten textos pedagógicos y arreglos vacíos. Los ids
+        de unidad y lección son únicos en el curso; los de bloques y actividades
+        son únicos dentro de sus colecciones en la lección; opciones únicas por
+        actividad. Estas restricciones entre elementos se validan en Zod y SQL.
+      required: [title, level, audience, units]
+      additionalProperties: false
+      properties:
+        title: {type: string, maxLength: 200}
+        level: {$ref: '#/components/schemas/Level'}
+        audience: {$ref: '#/components/schemas/Audience'}
+        units: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/DocumentUnit'}}
+    PublishedDocument:
+      description: |
+        Cumple DraftDocument y estas reglas de publicación validadas por servidor:
+        títulos y objetivos no vacíos; al menos una unidad y una lección completa
+        por unidad; un bloque de texto no vacío por lección; al menos una actividad
+        obligatoria por lección; cada actividad con enunciado, dos opciones como
+        mínimo, textos no vacíos, solución existente y ambos feedback no vacíos.
+      allOf:
+        - {$ref: '#/components/schemas/DraftDocument'}
+        - type: object
+          properties:
+            title: {minLength: 1, pattern: '\S'}
+            units:
+              minItems: 1
+              items:
+                type: object
+                properties:
+                  title: {minLength: 1, pattern: '\S'}
+                  lessons:
+                    minItems: 1
+                    items:
+                      type: object
+                      properties:
+                        title: {minLength: 1, pattern: '\S'}
+                        objective: {minLength: 1, pattern: '\S'}
+                        blocks:
+                          minItems: 1
+                          items: {type: object, properties: {text: {minLength: 1, pattern: '\S'}}}
+                        activities:
+                          minItems: 1
+                          contains: {type: object, required: [required], properties: {required: {const: true}}}
+                          items:
+                            type: object
+                            properties:
+                              prompt: {minLength: 1, pattern: '\S'}
+                              correctOptionId: {minLength: 1}
+                              options:
+                                minItems: 2
+                                items: {type: object, properties: {text: {minLength: 1, pattern: '\S'}}}
+                              feedback:
+                                type: object
+                                properties:
+                                  correct: {minLength: 1, pattern: '\S'}
+                                  incorrect: {minLength: 1, pattern: '\S'}
+    Draft:
+      type: object
+      required: [courseId, revision, document]
+      additionalProperties: false
+      properties:
+        courseId: {$ref: '#/components/schemas/Uuid'}
+        revision: {$ref: '#/components/schemas/Revision'}
+        document: {$ref: '#/components/schemas/DraftDocument'}
+    SaveDraftInput:
+      type: object
+      required: [expectedRevision, document]
+      additionalProperties: false
+      properties:
+        expectedRevision: {$ref: '#/components/schemas/Revision'}
+        document: {$ref: '#/components/schemas/DraftDocument'}
+    ReleaseInput:
+      type: object
+      required: [expectedRevision]
+      additionalProperties: false
+      properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}}
+    Outline:
+      type: object
+      required: [courseId, title, level, audience, releaseId, units, courseProgress]
+      additionalProperties: false
+      properties:
+        courseId: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        level: {$ref: '#/components/schemas/Level'}
+        audience: {$ref: '#/components/schemas/Audience'}
+        releaseId: {$ref: '#/components/schemas/Uuid'}
+        units:
+          type: array
+          items:
+            type: object
+            required: [id, title, lessons]
+            additionalProperties: false
+            properties:
+              id: {$ref: '#/components/schemas/StableId'}
+              title: {type: string}
+              lessons:
+                type: array
+                items:
+                  type: object
+                  required: [id, title, lessonVersionId, completed]
+                  additionalProperties: false
+                  properties:
+                    id: {$ref: '#/components/schemas/StableId'}
+                    title: {type: string}
+                    lessonVersionId: {$ref: '#/components/schemas/Uuid'}
+                    completed: {type: boolean}
+        courseProgress: {$ref: '#/components/schemas/CourseProgress'}
+    Lesson:
+      type: object
+      required: [courseId, lessonId, lessonVersionId, title, objective, blocks, activities]
+      additionalProperties: false
+      properties:
+        courseId: {$ref: '#/components/schemas/Uuid'}
+        lessonId: {$ref: '#/components/schemas/StableId'}
+        lessonVersionId: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        objective: {type: string}
+        blocks: {type: array, items: {$ref: '#/components/schemas/TextBlock'}}
+        activities: {type: array, items: {$ref: '#/components/schemas/StudentChoiceActivity'}}
+    AttemptInput:
+      type: object
+      required: [lessonVersionId, answers]
+      additionalProperties: false
+      properties:
+        lessonVersionId: {$ref: '#/components/schemas/Uuid'}
+        answers:
+          type: array
+          maxItems: 100
+          description: Una respuesta por actividad obligatoria. activityId no se puede repetir. Solo optionId se admite en fase 1.
+          items:
+            type: object
+            required: [activityId, optionId]
+            additionalProperties: false
+            properties:
+              activityId: {$ref: '#/components/schemas/StableId'}
+              optionId: {$ref: '#/components/schemas/StableId'}
+    AttemptResult:
+      type: object
+      required: [attemptId, score, items, courseProgress]
+      additionalProperties: false
+      properties:
+        attemptId: {$ref: '#/components/schemas/Uuid'}
+        score:
+          type: object
+          required: [correct, total]
+          additionalProperties: false
+          properties:
+            correct: {type: integer, minimum: 0}
+            total: {type: integer, minimum: 0}
+        items:
+          type: array
+          items:
+            type: object
+            required: [activityId, correct, feedback]
+            additionalProperties: false
+            properties:
+              activityId: {$ref: '#/components/schemas/StableId'}
+              correct: {type: boolean}
+              feedback: {type: string}
+        courseProgress: {$ref: '#/components/schemas/CourseProgress'}

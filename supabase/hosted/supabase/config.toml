@@ -1,0 +1,15 @@
+# Auth settings for the explicitly selected development integration on port 3002.
+# CLI: --workdir supabase/hosted --remote=gpixjzkfovepghpdiikp
+project_id = "english-in-action-hosted"
+[auth]
+site_url = "http://127.0.0.1:3002"
+additional_redirect_urls = ["http://127.0.0.1:3002/auth/confirm", "http://127.0.0.1:3002/definir-clave"]
+enable_signup = false
+enable_anonymous_sign_ins = false
+minimum_password_length = 12
+[auth.email]
+enabled = true
+enable_confirmations = true
+double_confirm_changes = true
+# Email templates require custom SMTP (or eligible plan) on the hosted project.
+# After configuring SMTP, append the sections in email-templates.toml.example.

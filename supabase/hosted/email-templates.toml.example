@@ -1,0 +1,7 @@
+# Append to supabase/config.toml in this directory only after SMTP is configured.
+[auth.email.template.invite]
+subject = "Tu invitación a English in Action"
+content_path = "./supabase/templates/invite.html"
+[auth.email.template.recovery]
+subject = "Recupera tu acceso a English in Action"
+content_path = "./supabase/templates/recovery.html"

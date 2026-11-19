@@ -1,0 +1,198 @@
+{
+  "projectRef": "gpixjzkfovepghpdiikp",
+  "result": "passed",
+  "checks": [
+    "authorized_project",
+    "authorized_app_origin",
+    "credentials_configured",
+    "four_fictional_identities",
+    "fixture_password_configured",
+    "admin_real_auth_login",
+    "admin_profile_authorization",
+    "teacher_real_auth_login",
+    "teacher_profile_authorization",
+    "student_real_auth_login",
+    "student_profile_authorization",
+    "outsider_real_auth_login",
+    "outsider_profile_authorization",
+    "course_argument_valid",
+    "observer_courses_read_ok",
+    "one_requested_course",
+    "acceptance_course_owned_published",
+    "observer_courses_read_ok",
+    "observer_drafts_read_ok",
+    "observer_releases_read_ok",
+    "observer_lesson_versions_read_ok",
+    "observer_release_lessons_read_ok",
+    "observer_enrollments_read_ok",
+    "observer_attempts_read_ok",
+    "browser_fixture_counts",
+    "fixture_student_owns_membership_attempts",
+    "two_attempts_same_first_lesson",
+    "original_attempt_then_voluntary_correction",
+    "actor_courses_read_ok",
+    "actor_courses_read_ok",
+    "outsider_courses_empty",
+    "actor_drafts_read_ok",
+    "actor_drafts_read_ok",
+    "outsider_drafts_empty",
+    "actor_releases_read_ok",
+    "actor_releases_read_ok",
+    "outsider_releases_empty",
+    "actor_lesson_versions_read_ok",
+    "actor_lesson_versions_read_ok",
+    "outsider_lesson_versions_empty",
+    "actor_release_lessons_read_ok",
+    "actor_release_lessons_read_ok",
+    "outsider_release_lessons_empty",
+    "actor_enrollments_read_ok",
+    "actor_enrollments_read_ok",
+    "outsider_enrollments_empty",
+    "actor_attempts_read_ok",
+    "actor_attempts_read_ok",
+    "outsider_attempts_empty",
+    "student_rls_exact_counts",
+    "student_attempts_only_own",
+    "student_current_release_no_answer_keys",
+    "student_progress_one_of_two",
+    "student_next_lesson_second",
+    "outsider_outline_denied",
+    "student_teacher_rpc_denied",
+    "student_admin_rpc_denied",
+    "anonymous_courses_denied",
+    "anonymous_drafts_denied",
+    "anonymous_releases_denied",
+    "anonymous_lesson_versions_denied",
+    "anonymous_release_lessons_denied",
+    "anonymous_enrollments_denied",
+    "anonymous_attempts_denied",
+    "anonymous_rpc_denied",
+    "student_private_schema_not_exposed",
+    "outsider_private_schema_not_exposed",
+    "persisted_original_replay_ready",
+    "concurrent_replay_1_original_response",
+    "concurrent_replay_2_original_response",
+    "observer_courses_read_ok",
+    "observer_drafts_read_ok",
+    "observer_releases_read_ok",
+    "observer_lesson_versions_read_ok",
+    "observer_release_lessons_read_ok",
+    "observer_enrollments_read_ok",
+    "observer_attempts_read_ok",
+    "courses_unchanged_after_checks",
+    "drafts_unchanged_after_checks",
+    "releases_unchanged_after_checks",
+    "lesson_versions_unchanged_after_checks",
+    "release_lessons_unchanged_after_checks",
+    "enrollments_unchanged_after_checks",
+    "attempts_unchanged_after_checks",
+    "outline_and_progress_unchanged"
+  ],
+  "realAuthLogins": 4,
+  "studentRows": {
+    "courses": 0,
+    "drafts": 0,
+    "releases": 1,
+    "lesson_versions": 2,
+    "release_lessons": 2,
+    "enrollments": 1,
+    "attempts": 2
+  },
+  "outsiderRows": {
+    "courses": 0,
+    "drafts": 0,
+    "releases": 0,
+    "lesson_versions": 0,
+    "release_lessons": 0,
+    "enrollments": 0,
+    "attempts": 0
+  },
+  "denials": {
+    "outsiderOutline": {
+      "transportStatus": 400,
+      "domainStatus": 404,
+      "code": "not_found"
+    },
+    "studentTeacher": {
+      "transportStatus": 400,
+      "domainStatus": 403,
+      "code": "forbidden"
+    },
+    "studentAdmin": {
+      "transportStatus": 400,
+      "domainStatus": 403,
+      "code": "forbidden"
+    }
+  },
+  "anonymous": {
+    "courses": {
+      "status": 401,
+      "code": "42501"
+    },
+    "drafts": {
+      "status": 401,
+      "code": "42501"
+    },
+    "releases": {
+      "status": 401,
+      "code": "42501"
+    },
+    "lesson_versions": {
+      "status": 401,
+      "code": "42501"
+    },
+    "release_lessons": {
+      "status": 401,
+      "code": "42501"
+    },
+    "enrollments": {
+      "status": 401,
+      "code": "42501"
+    },
+    "attempts": {
+      "status": 401,
+      "code": "42501"
+    },
+    "outline": {
+      "status": 401,
+      "code": "42501"
+    }
+  },
+  "privateSchema": {
+    "student": {
+      "status": 406,
+      "code": "PGRST106"
+    },
+    "outsider": {
+      "status": 406,
+      "code": "PGRST106"
+    }
+  },
+  "replays": {
+    "requests": 2,
+    "statuses": [
+      200,
+      200
+    ],
+    "sameAttempt": true,
+    "originalResponse": true,
+    "created": false,
+    "attemptsBefore": 2,
+    "attemptsAfter": 2
+  },
+  "progress": {
+    "completed": 1,
+    "total": 2,
+    "nextLessonUnchanged": true
+  },
+  "unchangedTables": [
+    "courses",
+    "drafts",
+    "releases",
+    "lesson_versions",
+    "release_lessons",
+    "enrollments",
+    "attempts"
+  ],
+  "checkedAt": "2026-11-19T19:04:51.798Z"
+}

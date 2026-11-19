@@ -1,0 +1,7 @@
+.recovery { padding: 24px; margin-bottom: 28px; border: 1px solid #b68031; border-radius: 12px; background: #fff8e9; }
+.recovery h2 { font-size: 1.2rem; margin-bottom: 10px; }
+.recovery p { margin-bottom: 18px; max-width: 65ch; }
+.fields { display: flex; align-items: end; gap: 16px; flex-wrap: wrap; }
+.fields label { flex: 1 1 220px; min-width: 0; }
+.fields button { min-height: 44px; }
+@media (max-width: 620px) { .recovery { padding: 20px; } .fields button { width: 100%; } }
