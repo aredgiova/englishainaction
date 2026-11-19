@@ -1,9 +1,18 @@
-# Auth settings for the explicitly selected development integration on port 3002.
+# Auth settings for the deployed app; retain existing local and Vercel preview returns.
 # CLI: --workdir supabase/hosted --remote=gpixjzkfovepghpdiikp
 project_id = "english-in-action-hosted"
 [auth]
-site_url = "http://127.0.0.1:3002"
-additional_redirect_urls = ["http://127.0.0.1:3002/auth/confirm", "http://127.0.0.1:3002/definir-clave"]
+site_url = "https://englishainaction.vercel.app"
+additional_redirect_urls = [
+  "https://englishainaction.vercel.app/auth/confirm",
+  "https://englishainaction.vercel.app/definir-clave",
+  "http://127.0.0.1:3002/auth/confirm",
+  "http://127.0.0.1:3002/definir-clave",
+  "https://englishainaction-aredlopez-8250s-projects.vercel.app/",
+  "https://englishainaction-aredlopez-8250s-projects.vercel.app/**",
+  "https://englishainaction-*-aredlopez-8250s-projects.vercel.app",
+  "https://englishainaction-*-aredlopez-8250s-projects.vercel.app/**"
+]
 enable_signup = false
 enable_anonymous_sign_ins = false
 minimum_password_length = 12

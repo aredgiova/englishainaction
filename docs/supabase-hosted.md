@@ -9,11 +9,14 @@ Esta guía permite repetir la integración del proyecto de pruebas identificado 
 | Organización | MacheCorp · `itzmwapdktvtdmtdddpq` |
 | Región | `us-east-1` |
 | Plan observado | Free |
+| Origen de la aplicación desplegada | `https://englishainaction.vercel.app` |
 | Origen de aplicación para desarrollo integrado | `http://127.0.0.1:3002` |
 
 El inventario inicial consultado por el conector el 19 de noviembre de 2026 encontró **cero usuarios Auth, cero tablas de aplicación y cero migraciones registradas**. Es una fotografía previa a la integración: vuelve a consultar el estado antes de repetir operaciones. No implica que los esquemas internos de Supabase estén vacíos.
 
 En la integración posterior se autenticó la CLI y se aplicaron las migraciones **001 y 002**. La lista posterior alineó las versiones locales y remotas, y el ensayo final no encontró migraciones pendientes. También se aplicaron cuatro diferencias de Auth: Site URL, redirecciones, registro público deshabilitado y contraseña mínima de doce caracteres. Se crearon cuatro identidades ficticias mediante Auth Admin para probar la aplicación. **El correo y sus plantillas siguen pendientes**: esas identidades se confirmaron administrativamente, sin enviar correos. Los resultados de aceptación de la interfaz se registran en el informe, sin inferirlos de estos pasos de infraestructura.
+
+Tras el despliegue en Vercel se actualizó Auth al dominio `https://englishainaction.vercel.app`. La CLI aplicó únicamente Site URL y las redirecciones: añadió los retornos exactos `/auth/confirm` y `/definir-clave`, conservando los dos retornos locales y las cuatro entradas Vercel que ya existían remotamente. La comparación posterior confirmó **cero cambios declarados pendientes** (`update=0`, `local_only=0`); las ocho propiedades remotas no declaradas se conservaron. Esta verificación de Auth no acredita las variables de entorno ni el redespliegue de Vercel.
 
 ## Preparación y credenciales
 
@@ -68,11 +71,11 @@ No uses `db reset`, `migration repair`, `--include-all`, `--include-seed` ni la 
 
 ## Configuración de Next.js y Auth
 
-Prepara una configuración local privada para este destino y conserva por separado cualquier entorno anterior. Comprueba que `NEXT_PUBLIC_SUPABASE_URL` y ambas claves pertenecen a **gpixjzkfovepghpdiikp**, no a otro proyecto.
+Prepara una configuración privada para cada entorno y conserva por separado el desarrollo local y Vercel. Comprueba que `NEXT_PUBLIC_SUPABASE_URL` y ambas claves pertenecen a **gpixjzkfovepghpdiikp**, no a otro proyecto.
 
 | Variable | Valor o procedencia para esta integración |
 | --- | --- |
-| `APP_URL` | `http://127.0.0.1:3002` |
+| `APP_URL` | En Vercel: `https://englishainaction.vercel.app`; en desarrollo local: `http://127.0.0.1:3002` |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL API que muestra el proyecto seleccionado |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave publicable `sb_publishable_…` del proyecto, o clave `anon` heredada compatible; el nombre de la variable se conserva |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave administrativa compatible del mismo proyecto, exclusivamente en servidor, para invitaciones |
@@ -83,14 +86,16 @@ No uses `DEMO_PASSWORD` ni el buzón Mailpit local como credenciales o correo de
 
 La academia admite **solo acceso por invitación**. En la configuración de Auth del proyecto alojado, desactiva el registro público de usuarios y mantén deshabilitadas las sesiones anónimas. Es el equivalente alojado de `enable_signup = false` y `enable_anonymous_sign_ins = false` del entorno local; el archivo `config.toml` local no aplica esas opciones automáticamente al proyecto remoto. No basta con que la interfaz carezca de formulario de registro. Verifica que un intento de registro público con una dirección de prueba controlada sea rechazado sin crear una identidad, y que la invitación administrativa seguida de confirmación siga funcionando.
 
-En Auth → URL Configuration del proyecto, configura para esta prueba:
+En Auth → URL Configuration del proyecto, la configuración aplicada para el dominio desplegado es:
 
-- Site URL: `http://127.0.0.1:3002`.
-- Redirect URLs exactas: `http://127.0.0.1:3002/auth/confirm` y `http://127.0.0.1:3002/definir-clave`.
+- Site URL: `https://englishainaction.vercel.app`.
+- Redirect URLs exactas de producción: `https://englishainaction.vercel.app/auth/confirm` y `https://englishainaction.vercel.app/definir-clave`.
+- Se conservan los retornos locales `http://127.0.0.1:3002/auth/confirm` y `http://127.0.0.1:3002/definir-clave` para la aceptación local contra Supabase alojado.
+- Se conservan las cuatro entradas Vercel preexistentes para el dominio de proyecto y sus previews. Están recogidas en el perfil; este ajuste no añadió comodines nuevos.
 
-Mantén un único origen: no alternes `localhost`, `127.0.0.1`, 3000, 3001 y 3002. Antes del piloto cambia el origen a su dominio HTTPS, actualiza la aplicación y Auth, revisa las redirecciones permitidas y recompila. [Configuración de retornos de Auth](https://supabase.com/docs/guides/auth/redirect-urls).
+Mantén un único origen por despliegue: en Vercel utiliza el dominio HTTPS indicado y en local `127.0.0.1:3002`. No reviertas Site URL a loopback al repetir esta guía. Configura `APP_URL` en Vercel y vuelve a desplegar para que el servidor incorpore sus variables. [Configuración de retornos de Auth](https://supabase.com/docs/guides/auth/redirect-urls).
 
-El perfil mínimo para el destino alojado está en `supabase/hosted/supabase/config.toml`. Declara el origen 3002, las dos redirecciones, el registro público y las sesiones anónimas deshabilitados, contraseña mínima de doce caracteres y confirmación de correo. Desde la raíz del repositorio, revisa y aplica este perfil con:
+El perfil mínimo para el destino alojado está en `supabase/hosted/supabase/config.toml`. Declara el origen HTTPS desplegado y las ocho redirecciones descritas, el registro público y las sesiones anónimas deshabilitados, contraseña mínima de doce caracteres y confirmación de correo. Desde la raíz del repositorio, revisa y aplica este perfil con:
 
 ```powershell
 node node_modules/supabase/dist/supabase.js config diff --workdir supabase/hosted --remote=gpixjzkfovepghpdiikp
@@ -98,7 +103,7 @@ node node_modules/supabase/dist/supabase.js config push --workdir supabase/hoste
 node node_modules/supabase/dist/supabase.js config diff --workdir supabase/hosted --remote=gpixjzkfovepghpdiikp
 ```
 
-Este perfil evita trasladar la configuración completa de Docker al proyecto remoto. Revisa las diferencias concretas y confirma el destino antes del `push`; después vuelve a comparar. En la ejecución registrada, el `push` aplicó correctamente las cuatro diferencias de Auth indicadas al inicio. Mantén las credenciales de SMTP fuera del archivo versionado.
+Este perfil evita trasladar la configuración completa de Docker al proyecto remoto. Revisa las diferencias concretas y confirma el destino antes del `push`; después vuelve a comparar. La integración inicial aplicó cuatro diferencias de Auth; el ajuste posterior a Vercel aplicó solo las dos propiedades de URL y dejó el perfil sincronizado. Mantén las credenciales de SMTP fuera del archivo versionado.
 
 La personalización de plantillas fue rechazada en este proyecto **Free con el proveedor de correo predeterminado**, con HTTP 400 y código `entitlement_required`. El servicio indicó que requiere SMTP propio o un plan habilitado. No se cambió el plan. Las secciones de plantillas se retiraron de la configuración activa, por lo que no se presentan como desplegadas.
 

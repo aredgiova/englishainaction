@@ -33,7 +33,7 @@ Antes de usar el dominio desplegado, en **Supabase → Authentication → URL Co
 - **Site URL:** el mismo origen HTTPS de `APP_URL`.
 - **Redirect URLs:** `https://TU-DOMINIO/auth/confirm` y `https://TU-DOMINIO/definir-clave`, sustituyendo `TU-DOMINIO` por el dominio real.
 
-Mantén el registro público y las sesiones anónimas deshabilitados, confirmación de correo habilitada y contraseña mínima de 12 caracteres. El perfil versionado `supabase/hosted/supabase/config.toml` corresponde a la aceptación local en el puerto 3002: no lo vuelvas a aplicar al proyecto tras cambiar al dominio HTTPS sin actualizar sus URL y revisar el diff. La [guía alojada](supabase-hosted.md) explica ese flujo.
+Mantén el registro público y las sesiones anónimas deshabilitados, confirmación de correo habilitada y contraseña mínima de 12 caracteres. El perfil versionado `supabase/hosted/supabase/config.toml` ya usa `https://englishainaction.vercel.app` y sus dos retornos exactos; conserva también los retornos locales y de Vercel que existían antes. Este ajuste fue aplicado y comprobado mediante la CLI. Antes de reaplicarlo revisa siempre el diff. La [guía alojada](supabase-hosted.md) explica ese flujo.
 
 Configura SMTP y las plantillas de invitación y recuperación de `supabase/templates/`. Ambas usan `/auth/confirm` y `token_hash`; la aplicación no tiene una ruta `/auth/callback`. El proveedor predeterminado del proyecto actual rechazó la personalización de plantillas, por lo que **la entrega real de correo sigue pendiente**. El ingreso por contraseña de identidades existentes ya fue probado. Las cuentas alojadas actuales son ficticias; completa el aprovisionamiento de cuentas operativas antes de abrir la academia a personas reales.
 
