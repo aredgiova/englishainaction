@@ -3,8 +3,12 @@ import Link from "next/link";
 import { ArrowRight, Compass, Headphones, MessageCircle, KeyRound, BookOpen, Sparkles } from "lucide-react";
 import { adventureMissions } from "@/lib/adventure-content";
 import styles from "@/components/adventure/adventure.module.css";
+import { requireAdventureAccess } from "@/lib/adventure-access";
+import { pageProblem } from "@/components/page-problem";
 
-export default function AdventurePage() {
+export default async function AdventurePage() {
+  try { await requireAdventureAccess(); }
+  catch (error) { return pageProblem(error); }
   return <main id="adventure-content">
     <section className={styles.hero}>
       <div className={styles.heroCopy}>
@@ -23,6 +27,6 @@ export default function AdventurePage() {
       </Link>)}</div>
     </section>
     <section className={styles.guide} id="guide"><div><Sparkles size={30} /><h2>El inglés es tu herramienta.<br />La aventura es tuya.</h2><p>Alex, Mia y Byte te acompañan. Puedes repetir las actividades, escuchar los ejemplos y avanzar sin cronómetro.</p></div><ol><li><BookOpen /><div><h3>Explora y descubre</h3><p>Conoce la historia y las palabras que necesitas.</p></div></li><li><Headphones /><div><h3>Escucha y practica</h3><p>Prueba tus respuestas y aprende con las pistas de Byte.</p></div></li><li><MessageCircle /><div><h3>Usa tu voz y tus palabras</h3><p>Ensaya en voz alta y crea una presentación o descripción.</p></div></li><li><KeyRound /><div><h3>Reconstruye el mapa</h3><p>Completa el recorrido de prueba y consigue sus llaves.</p></div></li></ol></section>
-    <aside className={styles.pilotNote}><strong>Estamos construyendo esta aventura.</strong><p>Esta versión permite revisar las dos primeras misiones. Conserva solo las paradas completadas en este navegador; no registra notas académicas. La misión 2 desarrolla actividades propuestas a partir del documento conceptual.</p><Link href="/docente">Revisar los módulos como docente <ArrowRight size={16} /></Link></aside>
+    <aside className={styles.pilotNote}><strong>Tu aventura continúa contigo.</strong><p>Las paradas completadas se guardan en tu cuenta. Las actividades son de práctica; no registran notas académicas.</p></aside>
   </main>;
 }

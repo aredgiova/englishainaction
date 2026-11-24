@@ -5,7 +5,8 @@ import { roleHome } from "@/lib/navigation";
 import { pageProblem } from "@/components/page-problem";
 import { CreateCourse } from "@/components/dashboard-actions";
 import { EditorialCourses } from "@/components/course-dashboard";
-import { AdventureStarter } from "@/components/adventure-starter";
+import { AdventureCatalog } from "@/components/adventure-catalog";
+import { getAdventureAccess } from "@/lib/adventure-access";
 
 export default async function TeacherPage() {
   let me: Profile;
@@ -13,7 +14,8 @@ export default async function TeacherPage() {
   catch (error) { return pageProblem(error); }
   if (me.role !== "teacher") redirect(roleHome(me.role));
   let courses: CourseSummary[];
-  try { courses = await listCourses(); }
+  let adventureAllowed: boolean;
+  try { const [catalog, access] = await Promise.all([listCourses(), getAdventureAccess()]); courses = catalog; adventureAllowed = access.allowed; }
   catch (error) { return pageProblem(error); }
-  return <><div className="page-heading"><div><h1>Tus cursos y publicaciones</h1><p>Prepara el material, revisa los objetivos y publica cuando esté listo.</p></div></div><CreateCourse /><AdventureStarter authorId={me.id} /><EditorialCourses courses={courses} canEdit /></>;
+  return <><div className="page-heading"><div><h1>Tus cursos y publicaciones</h1><p>Explora las misiones y prepara tus clases.</p></div></div>{adventureAllowed && <AdventureCatalog />}<CreateCourse /><EditorialCourses courses={courses} canEdit /></>;
 }

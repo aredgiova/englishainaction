@@ -19,7 +19,7 @@ test('permite abrir recuperación y presenta validación nativa de correo', asyn
     await email.fill('correo-invalido');
     expect(await email.evaluate((element: HTMLInputElement) => element.validity.typeMismatch)).toBe(true);
   } else {
-    await expect(page.getByText(/supabase/i).first()).toBeVisible();
+    await expect(page.getByText('Acceso temporalmente no disponible.', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /enviar/i })).toBeDisabled();
   }
   await expect(page.getByRole('button', { name: /enviar/i })).toBeVisible();

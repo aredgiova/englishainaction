@@ -5,6 +5,11 @@ import { roleHome } from "@/lib/navigation";
 import { pageProblem } from "@/components/page-problem";
 import { Administration } from "@/components/dashboard-actions";
 import { EditorialCourses } from "@/components/course-dashboard";
+import { AdventureCatalog } from "@/components/adventure-catalog";
+import { AdventureAccessManager } from "@/components/adventure-access-manager";
+import { getAdventureMembers } from "@/lib/adventure-access";
+import type { AdventureMember } from "@/lib/adventure-access-contracts";
+import styles from "@/components/adventure-catalog.module.css";
 
 export default async function AdministrationPage() {
   let me: Profile;
@@ -12,7 +17,8 @@ export default async function AdministrationPage() {
   catch (error) { return pageProblem(error); }
   if (me.role !== "admin") redirect(roleHome(me.role));
   let courses: CourseSummary[];
-  try { courses = await listCourses(); }
+  let members: AdventureMember[];
+  try { [courses, members] = await Promise.all([listCourses(), getAdventureMembers()]); }
   catch (error) { return pageProblem(error); }
-  return <><div className="page-heading"><div><h1>Administración de la academia</h1><p>Invita a las personas y conecta a cada estudiante con su curso.</p></div></div><Administration courses={courses} /><EditorialCourses courses={courses} canEdit={false} /></>;
+  return <><div className="page-heading"><div><h1>Administración de la academia</h1><p>Los cursos y las personas, en un solo lugar.</p></div></div><AdventureCatalog administrator /><AdventureAccessManager initialMembers={members} /><details open className={styles.more}><summary>Cuentas y otros cursos</summary><Administration courses={courses} /><EditorialCourses courses={courses} canEdit={false} /></details></>;
 }

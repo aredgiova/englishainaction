@@ -1,7 +1,35 @@
 import { expect, test } from "@playwright/test";
 import { adventureMissions } from "../../src/lib/adventure-content";
 
-test("las dos misiones permiten completar, revisar y recuperar solo el recorrido", async ({ page }) => {
+const originalProgress = new Map<string, string[]>();
+const origin = "http://127.0.0.1:3002";
+test.beforeEach(async ({ page }) => {
+  await page.goto("/ingresar");
+  await page.getByLabel("Correo electrónico", { exact: true }).fill(process.env.EIA_HOSTED_STUDENT_EMAIL!);
+  await page.getByLabel("Contraseña", { exact: true }).fill(process.env.EIA_HOSTED_TEST_PASSWORD!);
+  await page.getByRole("button", { name: "Ingresar a la academia", exact: true }).click();
+  await expect(page).toHaveURL(/\/campus$/);
+  originalProgress.clear();
+  for (const mission of adventureMissions) {
+    const response = await page.request.get(`/api/v1/adventure/progress/${mission.id}`);
+    expect(response.status()).toBe(200);
+    originalProgress.set(mission.id, (await response.json()).data.completedStepIds);
+    const cleared = await page.request.delete(`/api/v1/adventure/progress/${mission.id}`, { headers: { origin }, data: {} });
+    expect(cleared.status()).toBe(200);
+  }
+});
+test.afterEach(async ({ page }) => {
+  for (const [missionId, completed] of originalProgress) {
+    const reset = await page.request.delete(`/api/v1/adventure/progress/${missionId}`, { headers: { origin }, data: {} });
+    expect(reset.status()).toBe(200);
+    for (const stepId of completed) {
+      const restored = await page.request.put(`/api/v1/adventure/progress/${missionId}`, { headers: { origin }, data: { stepId, completed: true } });
+      expect(restored.status()).toBe(200);
+    }
+  }
+});
+
+test("las dos misiones permiten completar, revisar y recuperar el recorrido de la cuenta", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   for (const mission of adventureMissions) {
@@ -28,6 +56,8 @@ test("las dos misiones permiten completar, revisar y recuperar solo el recorrido
     await expect(page.getByRole("heading", { name: "¡Una nueva llave para tu mapa!" })).toBeVisible();
     await page.reload();
     await expect(page.getByText(`${mission.steps.length} de ${mission.steps.length} paradas completadas`)).toBeVisible();
+    const persisted = await page.request.get(`/api/v1/adventure/progress/${mission.id}`);
+    expect((await persisted.json()).data.completedStepIds).toEqual(mission.steps.map(step => step.id));
     const stored = await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)));
     expect(JSON.stringify(stored)).not.toContain("Fictional Explorer");
     await page.getByRole("button", { name: "Reiniciar recorrido" }).click();

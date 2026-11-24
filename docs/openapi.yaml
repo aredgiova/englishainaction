@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: English in Action — API de academia
-  version: 1.0.0
+  version: 1.1.0
   description: |
-    FASE_ACTIVA=1. Contrato de identidad, autoría, matrícula y práctica.
+    FASE_ACTIVA=1. Contrato de identidad, autoría, matrícula, práctica y acceso al curso de aventura.
     La interfaz está en español y el contenido didáctico en inglés.
     Auth de Supabase proporciona la sesión SSR. El rol se consulta en perfiles
     administrados por servidor; nunca se acepta del cliente ni de user_metadata.
@@ -24,6 +24,7 @@ tags:
   - name: Autoría
   - name: Matrículas
   - name: Práctica
+  - name: Aventura
 security:
   - sessionCookie: []
 paths:
@@ -517,6 +518,128 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/Invalid' }
+  /api/v1/adventure/access:
+    get:
+      operationId: getAdventureAccess
+      tags: [Aventura]
+      summary: Consultar si la cuenta actual puede abrir el curso de aventura
+      description: |
+        Consulta la autorización de la cuenta de sesión. allowed=false es una
+        respuesta válida y no permite leer ni modificar su progreso. El estado
+        procede del servidor; no se aceptan rol ni identificador de actor del cliente.
+      responses:
+        '200':
+          description: Visibilidad de la cuenta activa, con Cache-Control private, no-store.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdventureAccessResponse'}
+              example: {data: {allowed: true}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/adventure/members:
+    get:
+      operationId: getAdventureMembers
+      tags: [Aventura]
+      summary: Consultar docentes y estudiantes y su acceso al curso
+      description: Solo administración. Devuelve perfiles de docentes y estudiantes; active describe la cuenta y enabled la habilitación individual del curso. No cambia el rol ni el estado activo de la cuenta.
+      x-roles: [admin]
+      responses:
+        '200':
+          description: Miembros y permisos individuales, con Cache-Control private, no-store.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdventureMembersResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/adventure/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/AdventureUserId'
+    put:
+      operationId: setAdventureAccess
+      tags: [Aventura]
+      summary: Habilitar o deshabilitar el curso para un docente o estudiante
+      description: Solo administración. La operación reemplaza la habilitación individual y es idempotente. No modifica roles, cuentas, matrículas ni el progreso guardado.
+      x-roles: [admin]
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AdventureAccessInput'}
+            example: {enabled: true}
+      responses:
+        '200':
+          description: Habilitación guardada, con Cache-Control private, no-store.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdventureAccessUpdateResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404':
+          description: No existe un perfil docente o estudiante con ese identificador.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+              example: {error: {code: member_not_found, message: No se encontró el miembro.}}
+        '422': {$ref: '#/components/responses/Invalid'}
+  /api/v1/adventure/progress/{missionId}:
+    parameters:
+      - $ref: '#/components/parameters/AdventureMissionId'
+    get:
+      operationId: getAdventureProgress
+      tags: [Aventura]
+      summary: Recuperar las paradas completadas por la cuenta actual
+      description: |
+        Exige acceso vigente al curso. Devuelve únicamente el progreso de la
+        cuenta de sesión. Una cuenta sin acceso recibe 403 adventure_forbidden.
+        Las paradas completadas no constituyen una calificación ni guardan
+        respuestas, textos libres o grabaciones de voz.
+      responses:
+        '200': {$ref: '#/components/responses/AdventureProgress'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/Invalid'}
+    put:
+      operationId: setAdventureProgress
+      tags: [Aventura]
+      summary: Marcar o desmarcar una parada en la misión propia
+      description: |
+        Exige acceso vigente al curso. La parada debe pertenecer a la misión.
+        La operación es idempotente: completed=true añade una única marca;
+        completed=false elimina la marca. No admite identificador de estudiante
+        ni reemplaza las marcas de otras paradas o cuentas.
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AdventureProgressInput'}
+            example: {stepId: adventure-begins, completed: true}
+      responses:
+        '200': {$ref: '#/components/responses/AdventureProgress'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/Invalid'}
+    delete:
+      operationId: resetAdventureProgress
+      tags: [Aventura]
+      summary: Reiniciar las paradas de una misión de la cuenta actual
+      description: Exige acceso vigente al curso. Elimina únicamente las marcas propias de la misión indicada. Conserva el progreso de la otra misión y de otras personas. Devuelve completedStepIds vacío; repetir la operación produce el mismo resultado.
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false}
+            example: {}
+      responses:
+        '200': {$ref: '#/components/responses/AdventureProgress'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/Invalid'}
 components:
   securitySchemes:
     sessionCookie:
@@ -525,6 +648,16 @@ components:
       name: sb-project-ref-auth-token
       description: Nombre ilustrativo; Supabase SSR usa sb-<project-ref>-auth-token y fragmentos .0/.1 si hacen falta. Se obtiene por login o /auth/confirm; nunca enviar la clave service_role al cliente.
   parameters:
+    AdventureUserId:
+      name: userId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/Uuid'}
+    AdventureMissionId:
+      name: missionId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/AdventureMissionId'}
     Origin:
       name: Origin
       in: header
@@ -550,6 +683,12 @@ components:
       schema: {type: string, minLength: 8, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$'}
       example: 4b09e25f-846a-4452-872c-5a680976a21c
   responses:
+    AdventureProgress:
+      description: Paradas guardadas de la cuenta actual, con Cache-Control private, no-store.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/AdventureProgressResponse'}
+          example: {data: {missionId: hello-explorer, completedStepIds: [adventure-begins]}}
     Unauthorized:
       description: Sin sesión válida, sesión expirada o credenciales incorrectas.
       content:
@@ -643,6 +782,85 @@ components:
               items: [{activityId: origin, correct: true, feedback: Lina says she is from Yopal.}]
               courseProgress: {completed: 1, total: 2, nextLessonId: classmate}
   schemas:
+    AdventureMissionId:
+      type: string
+      enum: [hello-explorer, my-world]
+    AdventureAccess:
+      type: object
+      additionalProperties: false
+      required: [allowed]
+      properties:
+        allowed: {type: boolean}
+    AdventureAccessInput:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled: {type: boolean}
+    AdventureMember:
+      type: object
+      additionalProperties: false
+      required: [id, name, email, role, active, enabled]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        email: {type: string, format: email}
+        role: {type: string, enum: [teacher, student]}
+        active: {type: boolean}
+        enabled: {type: boolean}
+    AdventureProgressInput:
+      type: object
+      additionalProperties: false
+      required: [stepId, completed]
+      properties:
+        stepId:
+          $ref: '#/components/schemas/StableId'
+          description: Identificador de una parada canónica de la misión indicada. Una parada ajena o desconocida produce 422 validation_error.
+        completed: {type: boolean}
+    AdventureProgress:
+      type: object
+      additionalProperties: false
+      required: [missionId, completedStepIds]
+      properties:
+        missionId: {$ref: '#/components/schemas/AdventureMissionId'}
+        completedStepIds:
+          type: array
+          uniqueItems: true
+          maxItems: 14
+          description: Solo paradas canónicas de esta misión; Hello Explorer tiene 14 y My World tiene 9.
+          items: {$ref: '#/components/schemas/StableId'}
+    AdventureAccessResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/AdventureAccess'}
+    AdventureMembersResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/AdventureMember'}
+    AdventureAccessUpdateResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [userId, enabled]
+          properties:
+            userId: {$ref: '#/components/schemas/Uuid'}
+            enabled: {type: boolean}
+    AdventureProgressResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/AdventureProgress'}
     Uuid: {type: string, format: uuid}
     StableId: {type: string, minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9][A-Za-z0-9_-]*$'}
     Revision: {type: integer, minimum: 0, maximum: 2147483647}

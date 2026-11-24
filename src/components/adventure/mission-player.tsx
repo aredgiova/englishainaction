@@ -5,67 +5,66 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Compass, KeyRound, Volume2, Square, RotateCcw, Lightbulb, Mic, PencilLine } from "lucide-react";
 import type { AdventureMission, AdventureStep } from "@/lib/adventure-content";
+import type { AdventureProgress } from "@/lib/adventure-access-contracts";
+import { api, ClientApiError, messageFrom } from "../api";
 import styles from "./adventure.module.css";
 
-export function MissionPlayer({ mission }: { mission: AdventureMission }) {
+export function MissionPlayer({ mission, initialCompleted }: { mission: AdventureMission; initialCompleted: string[] }) {
   const [index, setIndex] = useState(0);
-  const [completed, setCompleted] = useState<string[]>([]);
-  const [storageReady, setStorageReady] = useState(false);
-  const [storageError, setStorageError] = useState(false);
+  const [completed, setCompleted] = useState<string[]>(initialCompleted);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [denied, setDenied] = useState(false);
   const [finished, setFinished] = useState(false);
+  const pending = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const step = mission.steps[index];
-  const storageKey = `eia-adventure-preview:v1:${mission.id}`;
-
-  useEffect(() => {
-    let ids: string[] = [];
-    let failed = false;
-    try {
-      const stored: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-      if (Array.isArray(stored)) ids = [...new Set(stored.filter((id): id is string => typeof id === "string" && mission.steps.some(item => item.id === id)))];
-    } catch { failed = true; }
-    queueMicrotask(() => { setCompleted(ids); setStorageReady(true); setStorageError(failed); });
-  }, [storageKey, mission.steps]);
-
-  function save(ids: string[]) {
-    setCompleted(ids);
-    try { localStorage.setItem(storageKey, JSON.stringify(ids)); }
-    catch { setStorageError(true); }
-  }
   function goTo(next: number) {
     setIndex(next); setFinished(false);
     requestAnimationFrame(() => { heading.current?.focus(); heading.current?.scrollIntoView({ behavior: "instant", block: "start" }); });
   }
-  function completeStep() {
-    const ids = completed.includes(step.id) ? completed : [...completed, step.id];
-    save(ids);
-    if (index < mission.steps.length - 1) goTo(index + 1);
-    else if (ids.length === mission.steps.length) { setFinished(true); requestAnimationFrame(() => heading.current?.focus()); }
-    else goTo(mission.steps.findIndex(item => !ids.includes(item.id)));
+  async function saveProgress(reset = false) {
+    if (pending.current) return;
+    pending.current = true; setSaving(true); setSaveError("");
+    try {
+      const result = await api<AdventureProgress>(`/adventure/progress/${mission.id}`, reset ? "DELETE" : "PUT", reset ? {} : { stepId: step.id, completed: true });
+      const ids = result.completedStepIds;
+      setCompleted(ids);
+      if (reset) goTo(0);
+      else if (index < mission.steps.length - 1) goTo(index + 1);
+      else if (ids.length === mission.steps.length) { setFinished(true); requestAnimationFrame(() => heading.current?.focus()); }
+      else goTo(mission.steps.findIndex(item => !ids.includes(item.id)));
+    } catch (cause) {
+      if (cause instanceof ClientApiError && cause.status === 403) setDenied(true);
+      setSaveError(messageFrom(cause));
+    } finally { pending.current = false; setSaving(false); }
   }
 
+  if (denied) return <main id="adventure-content" className={styles.accessDenied}><h1>El acceso a este curso cambió</h1><p>Tu avance se conserva. Consulta con la administración para volver a entrar.</p><Link href="/panel">Volver a mi panel</Link></main>;
   return <main id="adventure-content" className={styles.player}>
-    <div className={styles.playerTop}><Link href="/aventura#missions"><ArrowLeft size={17} /> Volver al mapa</Link><span>Recorrido de prueba · {mission.level}</span></div>
+    <div className={styles.playerTop}><Link href="/aventura#missions"><ArrowLeft size={17} /> Volver al mapa</Link><span>Mi aventura · {mission.level}</span></div>
     <div className={styles.playerLayout}>
       <aside className={styles.route}>
         <div className={styles.routeHeading}><Compass size={22} /><span>Misión {mission.number}</span></div><h1 lang="en">{mission.title}</h1><p lang="en">{mission.place}</p>
-        <div className={styles.routeProgress}><span>{completed.length} de {mission.steps.length} paradas completadas</span><progress value={completed.length} max={mission.steps.length} aria-label="Paradas completadas en esta prueba" /></div>
-        <nav aria-label="Paradas de la misión"><ol>{mission.steps.map((item, position) => <li key={item.id}><button type="button" className={position === index && !finished ? styles.activeStep : ""} aria-current={position === index && !finished ? "step" : undefined} onClick={() => goTo(position)}><span className={styles.stepNumber}>{completed.includes(item.id) ? <Check size={14} aria-label="Completada" /> : position + 1}</span><span lang="en">{item.title}</span></button></li>)}</ol></nav>
-        <button type="button" disabled={!storageReady || !completed.length} className={styles.reset} onClick={() => { save([]); goTo(0); }}><RotateCcw size={14} /> Reiniciar recorrido</button>
+        <div className={styles.routeProgress}><span>{completed.length} de {mission.steps.length} paradas completadas</span><progress value={completed.length} max={mission.steps.length} aria-label="Paradas completadas en mi cuenta" /></div>
+        <nav aria-label="Paradas de la misión"><ol>{mission.steps.map((item, position) => <li key={item.id}><button type="button" disabled={saving} className={position === index && !finished ? styles.activeStep : ""} aria-current={position === index && !finished ? "step" : undefined} onClick={() => goTo(position)}><span className={styles.stepNumber}>{completed.includes(item.id) ? <Check size={14} aria-label="Completada" /> : position + 1}</span><span lang="en">{item.title}</span></button></li>)}</ol></nav>
+        <button type="button" disabled={saving || !completed.length} className={styles.reset} onClick={() => saveProgress(true)}><RotateCcw size={14} /> Reiniciar recorrido</button>
       </aside>
       <article className={styles.lessonPanel}>
         <div className={styles.lessonArt}><Image src={mission.image} alt={mission.imageAlt} fill sizes="(max-width: 760px) 100vw, 75vw" preload /><span className={styles.lessonPlace} lang="en"><Compass size={15} />{mission.place}</span></div>
         <div className={styles.lessonBody}>
-          {finished ? <section className={styles.reward} aria-live="polite"><div className={styles.rewardKey}><KeyRound size={48} /></div><h2 ref={heading} tabIndex={-1}>¡Una nueva llave para tu mapa!</h2><p lang="en">{mission.reward}</p><p>Completaste las {mission.steps.length} paradas de esta prueba. Sigue practicando: este recorrido no certifica el dominio del idioma.</p><div className={styles.rewardActions}><button className={styles.secondary} onClick={() => goTo(0)}>Repasar la misión</button><Link className={styles.primary} href={mission.number === 1 ? "/aventura/my-world" : "/aventura"}>{mission.number === 1 ? "Continuar a My World" : "Volver al mapa"}<ArrowRight size={18} /></Link></div></section> : <>
+          {saveError && <p className={styles.saveStatus} role="alert">{saveError}</p>}
+          {saving && <p className={styles.saveStatus} role="status">Guardando tu avance…</p>}
+          {finished ? <section className={styles.reward} aria-live="polite"><div className={styles.rewardKey}><KeyRound size={48} /></div><h2 ref={heading} tabIndex={-1}>¡Una nueva llave para tu mapa!</h2><p lang="en">{mission.reward}</p><p>Completaste las {mission.steps.length} paradas de esta misión. Sigue practicando: este recorrido no certifica el dominio del idioma.</p><div className={styles.rewardActions}><button className={styles.secondary} onClick={() => goTo(0)}>Repasar la misión</button><Link className={styles.primary} href={mission.number === 1 ? "/aventura/my-world" : "/aventura"}>{mission.number === 1 ? "Continuar a My World" : "Volver al mapa"}<ArrowRight size={18} /></Link></div></section> : <>
             <div className={styles.stepMeta}><span>{step.stage}</span><span>Parada {index + 1} / {mission.steps.length}</span></div>
             <h2 ref={heading} tabIndex={-1} className={styles.stepTitle} lang="en">{step.title}</h2>
-            <StepContent key={step.id} step={step} onComplete={completeStep} last={index === mission.steps.length - 1} ready={storageReady} />
-            {index > 0 && <button className={styles.previous} onClick={() => goTo(index - 1)}><ArrowLeft size={16} /> Parada anterior</button>}
+            <StepContent key={step.id} step={step} onComplete={() => { void saveProgress(); }} last={index === mission.steps.length - 1} ready={!saving} />
+            {index > 0 && <button disabled={saving} className={styles.previous} onClick={() => goTo(index - 1)}><ArrowLeft size={16} /> Parada anterior</button>}
           </>}
         </div>
       </article>
     </div>
-    <div className={styles.playerNote}><p>{mission.sourceNote}</p><p>{storageError ? "El navegador no permite guardar este recorrido. Puedes seguir practicando durante esta visita." : "Solo las paradas completadas se guardan en este navegador. Tus textos y ensayos orales no se envían ni se guardan como calificaciones."}</p></div>
+    <div className={styles.playerNote}><p>Tu avance se guarda en tu cuenta. Tus textos y ensayos orales no se envían ni se guardan como calificaciones.</p><details><summary>Sobre esta misión</summary><p>{mission.sourceNote}</p></details></div>
   </main>;
 }
 
