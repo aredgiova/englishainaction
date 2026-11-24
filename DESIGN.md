@@ -1,77 +1,117 @@
+---
+name: English in Action
+description: Academia operativa con acceso y misiones en el mundo ilustrado de The Discovery Islands.
+colors:
+  academy-primary: "#096b5c"
+  academy-navigation: "#173b40"
+  academy-background: "#f4f5ef"
+  academy-ink: "#19343b"
+  adventure-ink: "#153e49"
+  adventure-muted: "#4c686e"
+  adventure-teal: "#087267"
+  adventure-gold: "#fbd365"
+  adventure-background: "#f6faf7"
+  adventure-soft: "#e6f1e8"
+  paper: "#fff"
+  auth-focus: "#a06300"
+typography:
+  academy-body:
+    fontFamily: "Arial, Segoe UI, sans-serif"
+    fontSize: "15px"
+    lineHeight: 1.55
+  adventure-body:
+    fontFamily: "Nunito, sans-serif"
+    fontSize: "16px"
+  auth-title:
+    fontFamily: "Nunito, sans-serif"
+    fontSize: "clamp(30px, 2.6vw, 38px)"
+    fontWeight: 850
+    lineHeight: 1.15
+rounded:
+  academy-control: "8px"
+  adventure-control: "9px"
+  academy-panel: "12px"
+  adventure-panel: "16px"
+components:
+  auth-primary:
+    backgroundColor: "{colors.adventure-gold}"
+    textColor: "#173d45"
+    rounded: "{rounded.adventure-control}"
+    padding: "14px 19px"
+  academy-primary:
+    backgroundColor: "{colors.academy-primary}"
+    textColor: "{colors.paper}"
+    rounded: "{rounded.academy-control}"
+    padding: "10px 17px"
+---
+
 # English in Action — sistema visual
-
-## Dirección
-Un espacio de trabajo académico: la navegación orienta, las listas muestran el estado real y la siguiente acción permanece cerca del contenido. El diseño sirve la práctica y la gestión. La marca aparece en una firma tipográfica compacta y un símbolo geométrico de diálogo.
-
-## Contexto de uso
-Estudiantes y docentes trabajan en pantallas móviles o de escritorio, en aulas y espacios de estudio con luz diurna. La interfaz usa superficies claras, contraste alto y controles legibles.
-
-## Sistema de la academia
-- Superficie de página marfil tenue, paneles blancos, navegación azul marino y acciones verde petróleo. Las alertas usan colores semánticos con texto explícito.
-- Fuentes del sistema: Arial, Segoe UI, sans-serif. Escala fija, encabezados principales de 32 px; texto 15–16 px; metadatos 12–13 px.
-- Contenido con ancho máximo de 1220 px. Navegación lateral de 232 px en escritorio; barra compacta y enlaces horizontales en móvil.
-- Bordes finos, radios de 12 px para superficies, 8 px para campos y controles. Sin sombras decorativas, degradados ni imágenes ajenas al contenido.
-- Ritmo espacial de 4 px: grupos a 8–16 px, secciones a 24–40 px.
-- Estado primario verde petróleo `#096b5c`; navegación `#173b40`; página `#f4f5ef`. Foco visible de 3 px: `#a76b0f` sobre superficies claras y `#efbd65` sobre azul marino; controles nativos para formularios, selección única y edición.
-
-## Patrones
-El panel usa listas de cursos con estado editorial o avance. La administración dispone de formularios de invitación y matrícula en secciones independientes. La autoría usa un documento de unidades y lecciones, con acciones de orden explícitas y guardado por revisión. La práctica presenta objetivo, contenido y ejercicio en ese orden. La corrección aparece solo después de entregar y separa aciertos de finalización.
-
-Los destinos de cada rol son `/campus`, `/docente` y `/administracion`. El campus destaca la siguiente lección pendiente y su avance real. Las listas editoriales separan revisión del borrador y disponibilidad de la publicación. La vista previa y la confirmación de publicación usan diálogos nativos, con foco contenido y retorno al control anterior; en móvil, la vista previa ocupa la pantalla. Una sesión caducada presenta un formulario de recuperación dentro del espacio de trabajo, conservando los campos abiertos.
-
-## Accesibilidad y estados
-Etiquetas explícitas, `aria-live` para resultados, `role=alert` para errores, estados de espera con acciones deshabilitadas y recuperación clara. Los formularios mantienen los valores tras errores. Los enlaces y botones tienen áreas cómodas en móvil. El contenido nunca depende exclusivamente del color. Se respeta `prefers-reduced-motion`.
-
-Los cambios de autoría se recuperan desde el almacenamiento de sesión, separados por cuenta y curso. La navegación, recarga y cierre de sesión advierten sobre trabajo sin guardar. El cierre de sesión borra las copias locales de esa cuenta. Los errores de publicación identifican la unidad, lección, actividad y campo y permiten enfocarlo.
-
-Ante conflicto de revisión, el editor consulta la versión vigente sin alterar la edición local. Cargarla es una acción explícita que conserva primero copias completas descargables de los cambios anteriores. El respaldo precede a la sustitución; si falla, se conserva el borrador abierto. La reincorporación posterior es manual y el guardado mantiene la comprobación de revisión del servidor.
-
-## Evidencia de revisión
-Se inspeccionaron las capturas reales de acceso sin configuración en escritorio de 1440 px y móvil de 390 px, sin recortes ni desbordamiento visible. El detector mecánico no encontró incidencias. La revisión independiente cerró los tres hallazgos de recuperación, localización de errores y contraste de foco. Las pantallas autenticadas y sus interacciones requieren verificación visual con Supabase configurado; no se presentan como verificadas en navegador.
-
-## Procedencia
-La academia se inició sin identidad previa. Su paleta y estructura son decisiones de implementación, no afirmaciones del usuario. El sorteo inicial de dirección de Impeccable se ejecutó sin catálogo remoto; no se utilizaron tableros visuales externos. La academia conserva fuentes del sistema. La extensión de aventura utiliza las referencias aportadas posteriormente y los recursos locales descritos a continuación.
-
-# Extensión visual: English Learning Adventure
 
 ## Overview
 
-El mundo ilustrado se limita a `/aventura`, `/aventura/hello-explorer` y `/aventura/my-world`. Presenta The Discovery Islands como un recorrido de exploración amable: puerto y aldea, personajes infantiles tridimensionales, escenas tropicales y llaves de mapa. Los paneles de la academia conservan el sistema anterior. Esta primera presentación sirve para revisar los dos módulos; la adaptación visual y lectora por grupos de grados sigue pendiente.
+**Creative North Star: "The Discovery Islands"**
 
-Las dos ilustraciones originales, `public/adventure/welcome-harbor.png` y `public/adventure/explorer-village.png`, siguen las referencias gráficas del usuario. Los documentos y las fotografías de referencia están inventariados en [el mapa de fuentes](docs/adventure-source/source-map.md); las fotografías de pantallas no se usan como recursos de producción.
+El acceso y el curso ilustrado comparten un mundo de exploración amable: puerto, aldea, personajes tridimensionales, escenas tropicales y llaves de mapa. La imagen presenta ese mundo y el texto breve orienta la siguiente acción. Esta dirección, solicitada por el usuario, abarca acceso, recuperación, definición de contraseña, aventura y tarjetas de misión en los tres paneles.
+
+La academia conserva el espacio de trabajo operativo: navegación consistente, listas con estados reales, formularios y acciones próximas al contenido. Las tarjetas de aventura se integran en ese marco sin sustituir el editor, los cursos de autoría ni la gestión de cuentas.
+
+**Key Characteristics:**
+
+- Dos ilustraciones originales existentes: `public/adventure/welcome-harbor.png` y `public/adventure/explorer-village.png`.
+- Nunito local, superficies claras y acción ámbar en las superficies ilustradas.
+- Texto explícito para permiso, guardado, error y progreso.
+- Presentación adaptada a escritorio y móvil; adaptación pedagógica por grados pendiente.
+
+Los documentos y fotografías de referencia están inventariados en [el mapa de fuentes](docs/adventure-source/source-map.md). Las fotografías de pantallas no se usan como recursos de producción.
 
 ## Colors
 
-La fuente de verdad es `src/components/adventure/adventure.module.css`. Texto azul marino verdoso `--ad-ink: #153e49`, texto secundario `--ad-muted: #4c686e`, turquesa `--ad-teal: #087267`, ámbar `--ad-gold: #fbd365` y foco `--focus: #ad6900`. El fondo general es `#f6faf7`; los paneles son blancos y la guía usa verde jardín pálido `#e6f1e8`. La portada coloca texto blanco sobre `#143f48`. El ámbar identifica la acción principal; verde claro y texto explícito acompañan aciertos, y amarillo pálido acompaña pistas de reintento.
+Los tokens anteriores se extraen de `src/app/globals.css`, `auth.module.css`, `adventure-catalog.module.css` y `adventure/adventure.module.css`. La academia usa petróleo para acciones, marino para navegación y marfil tenue de fondo. El mundo ilustrado usa tinta azul verdosa, turquesa, ámbar y verde jardín claro. El ámbar identifica la acción principal de acceso y avance; el color siempre va acompañado de texto o estado accesible.
+
+El formulario usa blanco, contorno verde tenue y foco ocre. El catálogo cambia el fondo del indicador «Entrar» a ámbar al pasar el puntero. Las alertas conservan los colores semánticos y mensajes del sistema operativo.
 
 ## Typography
 
-Nunito variable se aloja en `public/fonts/nunito-variable.ttf` y se carga con `next/font/local`, limitada a la extensión mediante `--adventure-font`; su licencia acompaña el recurso. El cuerpo parte de 16 px, con instrucciones de 15 px y textos de práctica de 15–17 px. Los títulos usan peso 850. El título de portada escala entre 40 y 65 px; en móvil usa 45 px. El título de parada pasa de 34 a 28 px. Las etiquetas pequeñas son información complementaria y no sustituyen instrucciones.
+Nunito variable se aloja en `public/fonts/nunito-variable.ttf`, con su licencia, y se carga con `next/font/local`. Su alcance está aislado mediante variables de fuente de acceso, catálogo y aventura. El resto de la academia conserva las fuentes del sistema.
+
+El acceso usa título de formulario de 30–38 px, descripción de 16 px y etiquetas de 14 px con peso 800; en móvil la descripción baja a 14 px. La escena contiene un saludo grande de peso 900. El catálogo usa títulos de misión de 25 px. En aventura, la portada escala entre 40 y 65 px; la parada usa 34 px y 28 px en móvil. Las etiquetas pequeñas complementan las instrucciones.
 
 ## Layout
 
-La portada tiene un máximo de 1440 px y dos columnas, texto e ilustración. El catálogo dispone dos tarjetas de misión; el reproductor, una ruta lateral de 255 px y un panel de actividad. A 760 px o menos, la portada y las tarjetas forman una columna, y la ruta se convierte en una fila horizontal desplazable. El reproductor usa un máximo de 1320 px; las actividades mantienen ancho flexible y el texto largo se limita a 70 caracteres aproximados por línea.
+El acceso coloca una escena a la izquierda y marca y formulario a la derecha. El formulario tiene ancho máximo de 390 px. A 760 px o menos se apilan marca, escena de 205 px y formulario, con una sola acción principal visible. Recuperación y definición de contraseña reutilizan la misma composición.
+
+La academia conserva contenido de hasta 1220 px y lateral de 232 px en escritorio; en móvil utiliza barra compacta y enlaces horizontales. Las tarjetas de misión forman dos columnas, con separación de 24 px; a 700 px o menos se apilan. El gestor de acceso tiene búsqueda, filtro de rol y filas de personas; en móvil el botón de cada fila ocupa el ancho disponible.
+
+La aventura conserva portada de hasta 1440 px, reproductor de hasta 1320 px y ruta lateral de 255 px. A 760 px o menos la ruta se transforma en una fila desplazable. Los textos largos de actividad se limitan aproximadamente a 70 caracteres por línea.
 
 ## Elevation & Depth
 
-Las ilustraciones proporcionan la profundidad principal. Tarjetas y paneles usan sombras suaves; la etiqueta sobre la escena lleva una sombra más visible para separarse del paisaje. Un degradado une la ilustración de portada con su fondo oscuro en escritorio. La animación de revelado de la escena solo se aplica si el usuario no solicita movimiento reducido.
+Las ilustraciones aportan la profundidad principal. Los paneles operativos se delimitan con bordes finos; tarjetas y actividades ilustradas tienen sombras suaves. El catálogo usa `0 6px 24px #173b4012`. Los degradados se limitan a las escenas para dar contraste al texto o unir el paisaje con su fondo.
+
+El revelado de la imagen de acceso dura 800 ms y solo se aplica si no se solicita movimiento reducido. El movimiento no bloquea el formulario ni comunica por sí solo un estado.
 
 ## Shapes
 
-Tarjetas y paneles principales tienen radios de 16 px; bloques de actividad, 12 px; acciones y respuestas, 9 px. Números de parada, controles de audio y la recompensa emplean círculos. Los contornos finos delimitan opciones, vocabulario y escucha.
+Los paneles ilustrados usan esquinas de 16 px; los campos y acciones ilustrados, 9 px. La escena de acceso pasa a 12 px en móvil. La academia mantiene radios de 12 px para superficies y 8 px para controles. Círculos identifican paradas, controles de audio y recompensas; las opciones mantienen contornos legibles.
 
 ## Components
 
-La tarjeta completa enlaza a una misión. La ruta permite volver a cualquier parada y distingue selección y finalización. Cada actividad presenta contexto, instrucción, práctica y acción de avance; la comprobación muestra aciertos y pistas y admite reintentos. El avance conserva únicamente los identificadores de paradas completadas en este navegador. La recompensa reconoce recorrido, no dominio del idioma.
+**Acceso.** Marca compacta con brújula, imagen Welcome Harbor y formulario breve. «Tu aventura continúa.» introduce correo y contraseña. Las etiquetas permanecen visibles; el control de mostrar contraseña anuncia su estado. Se conservan autocompletado, recuperación, confirmación de contraseña, espera, errores y enlace para saltar al formulario. El envío correcto lleva al panel del rol. El fallo conserva los campos y permite reintentar.
 
-Los controles de escucha usan la voz del dispositivo, permiten detenerla y ofrecen transcripción en las actividades de escucha. Habla y escritura incluyen modelos y autoevaluación. Se conservan controles nativos, nombres accesibles, enlace para saltar al contenido, foco al cambiar de parada y mensajes de resultado y error. No se graba audio ni se califica automáticamente la producción oral o escrita.
+**Catálogo.** Cada tarjeta completa enlaza a una misión y muestra imagen, nombre, descripción breve, escenario y «Entrar». Administración ve además «Administrar acceso». Docentes y estudiantes ven tarjetas y navegación de aventura solo cuando el servidor confirma su permiso.
+
+**Control de acceso.** «Quién puede entrar» muestra nombre, correo, rol y estado. El botón permite o retira acceso individual; las cuentas inactivas se identifican y no pueden operarse desde ese control. El resultado se anuncia con texto y recuerda que el avance se conserva.
+
+**Reproductor.** La ruta distingue selección y finalización. Cada parada presenta contexto, instrucción, práctica y avance. El guardado confirmado actualiza el progreso por cuenta; los errores y la retirada de permiso tienen salida visible. La recompensa reconoce recorrido, no dominio lingüístico. Voz del dispositivo, transcripciones, modelos y autoevaluación mantienen disponibles alternativas al audio.
+
+**Academia.** Listas editoriales distinguen borrador y publicación. Los diálogos nativos de vista previa y publicación contienen el foco y lo devuelven al control anterior. La edición conserva recuperación de sesión y respaldo descargable ante conflictos. Los cursos genéricos mantienen su progreso y aciertos separados.
 
 ## Do's and Don'ts
 
-- Mantener esta dirección visual dentro de la aventura y preservar la interfaz operativa de la academia.
-- Usar personajes e ilustraciones originales coherentes con las fuentes, instrucciones breves y feedback que permita volver a intentar.
-- Identificar el contenido en revisión y distinguir el recorrido local del progreso institucional.
-- No presentar las llaves, las paradas completadas ni la autoevaluación como certificación de aprendizaje.
-- No afirmar adaptación para todos los grados, audio grabado o evaluación automática de pronunciación.
+- **Do** conservar el mundo ilustrado en acceso, aventura y tarjetas, y el marco operativo del resto de los paneles.
+- **Do** usar las ilustraciones originales, instrucciones breves y feedback que permita reintentar.
+- **Do** mostrar los estados persistidos de permiso y guardado y mantener foco visible, etiquetas y mensajes accesibles.
+- **Don't** presentar llaves, paradas completadas o autoevaluación como certificación de aprendizaje.
+- **Don't** afirmar adaptación para todos los grados, audio grabado o evaluación automática de pronunciación.
 
-La evidencia en `docs/evidencia/adventure/` incluye portada y misión a 1440 y 390 px. La verificación funcional documentada en [docs/aventura.md](docs/aventura.md) cubre ambos recorridos, respuestas, reinicio, recuperación local, controles de voz y ausencia de desbordamiento. La importación real se comprobó con cuentas ficticias existentes y Supabase remoto, incluida la persistencia privada del borrador y el funcionamiento de la vista previa con teclado y a 390 px. El borrador de prueba se eliminó sin publicarlo. Esta comprobación funcional no incluye una inspección visual de capturas autenticadas ni uso de cuentas institucionales reales. Los estados de fallo y reintento también se comprobaron con dobles de la API.
+La evidencia actual está en `docs/evidencia/auth/` y `docs/evidencia/access/`; la revisión independiente aprobó acceso, recuperación y paneles de los tres roles sin hallazgos materiales. Alcance y pruebas: [verificación de acceso](docs/verificacion-acceso-2026-11-24.md). El [informe previo de aventura](docs/verificacion-aventura-2026-11-24.md) se conserva como registro histórico.

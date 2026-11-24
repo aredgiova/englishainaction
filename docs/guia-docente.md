@@ -2,6 +2,12 @@
 
 El ejemplo es **First Conversations**, A1 universitario: una unidad, **Introducing yourself** e **Introducing a classmate**. Los diálogos, objetivos, opciones y feedback originales están en `src/lib/demo-content.ts`. El docente debe validar el material antes de usarlo con estudiantes reales.
 
+## Usar English Learning Adventure
+
+Las dos misiones ilustradas se abren directamente desde las tarjetas de `/docente` cuando administración ha habilitado la cuenta. El estudiante autorizado encuentra las mismas tarjetas en `/campus`; no hace falta importar, publicar ni matricular la aventura como un curso nuevo. Administración gestiona el permiso individual de ambas misiones en «Quién puede entrar». El avance se guarda por cuenta y retirar el permiso lo conserva.
+
+Las cuentas docentes y estudiantiles activas al aplicar la migración recibieron el permiso inicial elegido por el usuario. Las cuentas posteriores necesitan habilitación manual. My World requiere validación curricular, y las prácticas de habla y escritura usan modelos y autoevaluación sin calificación automática. Consulta [aventura.md](aventura.md) y la [verificación actual de acceso](verificacion-acceso-2026-11-24.md). El recorrido de First Conversations que sigue corresponde al motor independiente de cursos de autoría.
+
 ## Preparar el entorno local
 
 Con Docker activo y las dependencias instaladas, ejecuta `pnpm db:start`, `pnpm demo:seed` y `pnpm dev`. `db:start` genera `.env.local`; las cuentas ficticias usan su valor `DEMO_PASSWORD`. Abre `http://127.0.0.1:3000` y el buzón `MAILBOX_URL` indicado en ese archivo.
