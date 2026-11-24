@@ -5,6 +5,7 @@ import { roleHome } from "@/lib/navigation";
 import { pageProblem } from "@/components/page-problem";
 import { CreateCourse } from "@/components/dashboard-actions";
 import { EditorialCourses } from "@/components/course-dashboard";
+import { AdventureStarter } from "@/components/adventure-starter";
 
 export default async function TeacherPage() {
   let me: Profile;
@@ -14,5 +15,5 @@ export default async function TeacherPage() {
   let courses: CourseSummary[];
   try { courses = await listCourses(); }
   catch (error) { return pageProblem(error); }
-  return <><div className="page-heading"><div><h1>Tus cursos y publicaciones</h1><p>Prepara el material, revisa los objetivos y publica cuando esté listo.</p></div></div><CreateCourse /><EditorialCourses courses={courses} canEdit /></>;
+  return <><div className="page-heading"><div><h1>Tus cursos y publicaciones</h1><p>Prepara el material, revisa los objetivos y publica cuando esté listo.</p></div></div><CreateCourse /><AdventureStarter authorId={me.id} /><EditorialCourses courses={courses} canEdit /></>;
 }

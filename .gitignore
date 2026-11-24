@@ -13,3 +13,7 @@ coverage/
 *.tsbuildinfo
 .cache/
 *.log
+# User-supplied research copies stay local; authored assets and source mapping are versioned.
+docs/adventure-source/reference-images/
+docs/adventure-source/source-1-extracted.txt
+docs/adventure-source/source-2-extracted.txt

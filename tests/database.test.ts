@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { readFile, readdir } from 'node:fs/promises';
 import { profileSchema, courseSummarySchema, draftSchema, outlineSchema, lessonSchema, attemptResultSchema } from '../src/lib/contracts';
+import { adventureCourseDocument } from '../src/lib/adventure-templates';
 
 // This executes the production migration in real embedded PostgreSQL. Supabase
 // Auth's users table and JWT claim are the only test fixtures, not domain mocks.
@@ -99,6 +100,39 @@ beforeAll(async () => {
 afterAll(async () => { await db?.close(); });
 
 describe('Phase 1 PostgreSQL integration and authorization', () => {
+  it('saves and publishes the actual adventure template, then grades all 78 answers across 16 lessons', async () => {
+    await act('teacher');
+    const { title, level, audience } = adventureCourseDocument;
+    const created = await rpc<{ courseId: string; revision: number }>('api_create_course', [{ title, level, audience, units: [] }]);
+    const saved = await rpc<{ revision: number }>('api_save_draft', [created.courseId, created.revision, adventureCourseDocument]);
+    expect(saved.revision).toBe(2);
+    expect(draftSchema.parse(await rpc('api_get_draft', [created.courseId])).document).toEqual(adventureCourseDocument);
+    expect((await db.query('select id from public.releases where course_id=$1', [created.courseId])).rows).toHaveLength(0);
+    await rpc('api_publish', [created.courseId, saved.revision]);
+    await act('admin');
+    await rpc('api_enroll', [created.courseId, 'student@example.test']);
+    await act('student');
+    const outline = outlineSchema.parse(await rpc('api_outline', [created.courseId]));
+    expect(outline.units).toHaveLength(2);
+    expect(outline.courseProgress).toMatchObject({ completed: 0, total: 16 });
+
+    const lessons = adventureCourseDocument.units.flatMap(unit => unit.lessons);
+    let totalAnswers = 0;
+    for (const [index, source] of lessons.entries()) {
+      const lesson = lessonSchema.parse(await rpc('api_lesson', [created.courseId, source.id]));
+      expect(JSON.stringify(lesson)).not.toMatch(/correctOptionId|"feedback"/);
+      const attempt = await rpc<Write<Attempt>>('api_attempt', [created.courseId, source.id, `adventure-${index}`, {
+        lessonVersionId: lesson.lessonVersionId,
+        answers: source.activities.map(activity => ({ activityId: activity.id, optionId: activity.correctOptionId })),
+      }]);
+      totalAnswers += source.activities.length;
+      expect(attempt.data.score).toEqual({ correct: source.activities.length, total: source.activities.length });
+      expect(attempt.data.courseProgress.completed).toBe(index + 1);
+    }
+    expect(totalAnswers).toBe(78);
+    expect((await rpc<Outline>('api_outline', [created.courseId])).courseProgress).toEqual({ completed: 16, total: 16, nextLessonId: null });
+  });
+
   it('ignores role metadata and enforces authenticated server roles', async () => {
     await act('student');
     expect(await rpc('api_me')).toMatchObject({ id: actors.student, role: 'student' });

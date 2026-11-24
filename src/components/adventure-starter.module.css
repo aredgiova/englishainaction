@@ -1,0 +1,27 @@
+.starter {
+  margin: 28px 0;
+  padding: 26px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.content { max-width: 75ch; }
+.heading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.heading svg { flex-shrink: 0; color: var(--brand); }
+.heading h2 { font-size: 1.2rem; line-height: 1.35; text-wrap: balance; }
+.content > p { line-height: 1.65; }
+.detail { color: var(--muted); font-size: .9rem; margin-top: 10px; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 22px; }
+.actions > button, .actions > a { white-space: normal; }
+.preview { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: .88rem; font-weight: 600; }
+.preview:hover { text-decoration: underline; text-underline-offset: 3px; }
+.content > .note { color: var(--muted); font-size: .8rem; margin-top: 12px; }
+
+@media (max-width: 620px) {
+  .starter { margin: 24px 0; padding: 22px 20px; }
+  .heading { align-items: flex-start; gap: 10px; }
+  .heading h2 { font-size: 1.1rem; }
+  .actions { align-items: stretch; flex-direction: column; gap: 8px; }
+  .actions > button, .actions > a { justify-content: center; text-align: center; }
+}
