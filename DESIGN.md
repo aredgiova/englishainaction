@@ -78,7 +78,7 @@ El acceso usa título de formulario de 30–38 px, descripción de 16 px y etiqu
 
 ## Layout
 
-El acceso coloca una escena a la izquierda y marca y formulario a la derecha. El formulario tiene ancho máximo de 390 px. A 760 px o menos se apilan marca, escena de 205 px y formulario, con una sola acción principal visible. Recuperación y definición de contraseña reutilizan la misma composición.
+El acceso coloca una escena a la izquierda y marca y formulario a la derecha. El formulario tiene ancho máximo de 390 px. A 760 px o menos se apilan marca, escena de 205 px y formulario, con una sola acción principal visible. Recuperación y definición de contraseña reutilizan la misma composición. La imagen se entrega con calidad 90 y su tamaño responsivo considera también la altura del recorte `cover`, para evitar ampliar una miniatura en el panel vertical; se conserva el original de 1672 × 941 px.
 
 La academia conserva contenido de hasta 1220 px y lateral de 232 px en escritorio; en móvil utiliza barra compacta y enlaces horizontales. Las tarjetas de misión forman dos columnas, con separación de 24 px; a 700 px o menos se apilan. El gestor de acceso tiene búsqueda, filtro de rol y filas de personas; en móvil el botón de cada fila ocupa el ancho disponible.
 

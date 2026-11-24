@@ -25,7 +25,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
       </Link>
     </header>
     <aside className={styles.scene} aria-label="El mundo de English Learning Adventure">
-      <Image src="/adventure/welcome-harbor.png" alt="Alex y Byte te dan la bienvenida en el puerto de las islas de aventura." fill sizes="(max-width: 760px) 100vw, 58vw" preload className={styles.artwork} />
+      {/* Cover crops this landscape to a tall panel: size the source for its height too. */}
+      <Image src="/adventure/welcome-harbor.png" alt="Alex y Byte te dan la bienvenida en el puerto de las islas de aventura." fill sizes="(max-width: 760px) max(100vw, 365px), max(1320px, 180vh, 60vw)" quality={90} preload className={styles.artwork} />
       <div className={styles.sceneCopy}>
         <p lang="en">Hello,<br />explorer!</p>
         <span>Un mundo por descubrir.</span>
